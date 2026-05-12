@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>HydroHEA — Multi-Physics SaaS for Hydrogen Storage Alloys</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="hydrohea-styles.css" />
+
+<style>
+  html, body, #root { height: 100%; }
+  body { margin: 0; background: #050811; }
+
+  /* Route switcher pill — floats top-right on landing, replaced by side nav on app screens. */
+  .hh-route-pill {
+    position: fixed; top: 16px; right: 24px; z-index: 200;
+    display: inline-flex; align-items: center; gap: 2px;
+    padding: 4px; border-radius: 999px;
+    background: rgba(10, 14, 28, 0.85);
+    border: 1px solid var(--border-strong);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    font-family: var(--font-mono);
+  }
+  .hh-route-pill button {
+    appearance: none; border: 0; background: transparent;
+    color: var(--ink-3); font-family: inherit;
+    font-size: 11px; letter-spacing: 0.06em;
+    padding: 7px 12px; border-radius: 999px; cursor: pointer;
+    transition: color .15s ease, background .15s ease;
+  }
+  .hh-route-pill button:hover { color: var(--ink); }
+  .hh-route-pill button.active {
+    color: var(--ink);
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--border-strong);
+  }
+
+  /* App-screen container: take full viewport so the cockpit screens render
+     side-nav + content edge-to-edge instead of inside a 1440×1100 artboard. */
+  .hh-screen { width: 100%; height: 100vh; overflow: hidden; }
+  .hh-screen-scroll { width: 100%; min-height: 100vh; overflow-x: hidden; }
+  /* The shared .hh-art class clips overflow for artboards. The landing page is
+     a tall marketing page, so let it expand naturally when used as a route. */
+  .hh-screen-scroll > .hh-art { height: auto; overflow: visible; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="hydrohea-shell.jsx"></script>
+<script type="text/babel" src="hydrohea-landing-hero.jsx"></script>
+<script type="text/babel" src="hydrohea-landing.jsx"></script>
+<script type="text/babel" src="hydrohea-dashboard.jsx"></script>
+<script type="text/babel" src="hydrohea-ai.jsx"></script>
+<script type="text/babel" src="hydrohea-library.jsx"></script>
+<script type="text/babel" src="hydrohea-validation.jsx"></script>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const ROUTES = [
+  { id: 'landing',    label: 'Landing',     component: () => window.HHLanding },
+  { id: 'simulator',  label: 'Simulator',   component: () => window.HHDashboard },
+  { id: 'ai',         label: 'AI Predictor',component: () => window.HHAIPredictor },
+  { id: 'library',    label: 'Materials',   component: () => window.HHLibrary },
+  { id: 'validation', label: 'Validation',  component: () => window.HHValidation },
+];
+
+function routeFromHash() {
+  const h = (window.location.hash || '').replace('#', '');
+  return ROUTES.some(r => r.id === h) ? h : 'landing';
+}
+
+function App() {
+  const [route, setRoute] = useState(routeFromHash);
+
+  useEffect(() => {
+    const onHash = () => setRoute(routeFromHash());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  const go = id => { window.location.hash = id; };
+
+  const current = ROUTES.find(r => r.id === route) || ROUTES[0];
+  const Screen = current.component();
+
+  // Landing scrolls (tall marketing page); cockpit screens are full-viewport
+  // single-screen layouts with their own internal scroll regions.
+  const isLanding = route === 'landing';
+
+  return (
+    <>
+      <div className="hh-route-pill" role="tablist" aria-label="HydroHEA sections">
+        {ROUTES.map(r => (
+          <button
+            key={r.id}
+            type="button"
+            role="tab"
+            aria-selected={r.id === route}
+            className={r.id === route ? 'active' : ''}
+            onClick={() => go(r.id)}
+          >{r.label.toUpperCase()}</button>
+        ))}
+      </div>
+
+      <div className={isLanding ? 'hh-screen-scroll' : 'hh-screen'}>
+        {Screen ? <Screen /> : (
+          <div style={{ padding: 40, color: '#C9D2E3', fontFamily: 'Inter, sans-serif' }}>
+            Loading {current.label}…
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
