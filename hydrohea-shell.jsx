@@ -38,7 +38,18 @@ function HHLogo({ size = 28, label = true }) {
 
 /* ---------------- MARKETING TOP BAR ---------------- */
 function HHMarketingNav() {
-  const items = ['Platform', 'Science', 'Customers', 'Pricing', 'Research'];
+  const ctx = window.useHH && window.useHH();
+  const items = [
+    { label: 'Platform',  anchor: 'capabilities' },
+    { label: 'Science',   anchor: 'pipeline' },
+    { label: 'Customers', anchor: 'outcomes' },
+    { label: 'Pricing',   anchor: 'cta' },
+    { label: 'Research',  anchor: 'ai-band' },
+  ];
+  const scrollTo = (id) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
   return (
     <div style={{
       position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
@@ -46,18 +57,18 @@ function HHMarketingNav() {
       borderBottom: '1px solid rgba(35,44,70,0.5)',
       background: 'rgba(5,8,17,0.65)', backdropFilter: 'blur(20px)',
     }}>
-      <HHLogo />
+      <div style={{ cursor: 'pointer' }} onClick={() => ctx && ctx.navigate('landing')}><HHLogo /></div>
       <nav style={{ display: 'flex', alignItems: 'center', gap: 32, fontSize: 13, color: 'var(--ink-2)' }}>
         {items.map((it, i) => (
-          <a key={it} style={{ color: i === 0 ? 'var(--ink)' : 'var(--ink-3)', textDecoration: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-            {it}
+          <a key={it.label} onClick={() => scrollTo(it.anchor)} style={{ color: i === 0 ? 'var(--ink)' : 'var(--ink-3)', textDecoration: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+            {it.label}
             {i === 0 && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--cyan)', boxShadow: '0 0 8px var(--cyan-glow)' }} />}
           </a>
         ))}
       </nav>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }}>Sign in</button>
-        <button className="hh-btn hh-btn-primary" style={{ padding: '8px 16px', fontSize: 12 }}>
+        <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }} onClick={() => ctx && ctx.navigate('signin')}>Sign in</button>
+        <button className="hh-btn hh-btn-primary" style={{ padding: '8px 16px', fontSize: 12 }} onClick={() => ctx && ctx.openModal({ content: <window.HHModalDemo ctx={ctx} /> })}>
           Request demo <span>→</span>
         </button>
       </div>
@@ -67,6 +78,7 @@ function HHMarketingNav() {
 
 /* ---------------- APP SIDE NAV ---------------- */
 function HHSideNav({ active = 'simulator' }) {
+  const ctx = window.useHH && window.useHH();
   const items = [
     { id: 'home', icon: '◇', label: 'Overview' },
     { id: 'simulator', icon: '⬡', label: 'Simulator' },
@@ -79,18 +91,21 @@ function HHSideNav({ active = 'simulator' }) {
     { id: 'docs', icon: '?', label: 'Docs' },
     { id: 'settings', icon: '⚙', label: 'Settings' },
   ];
+  const navTo = (id) => { if (ctx) ctx.navigate(id); };
+  const lastRun = ctx?.runs?.[0];
+  const user = ctx?.user || { name: 'C. Lukwichi', org: 'ESIS · Metallurgy', initials: 'CL' };
   return (
     <aside style={{
       width: 240, background: 'var(--bg-1)', borderRight: '1px solid var(--border-soft)',
       display: 'flex', flexDirection: 'column', padding: '24px 0', flexShrink: 0,
     }}>
-      <div style={{ padding: '0 24px 28px' }}>
+      <div style={{ padding: '0 24px 28px', cursor: 'pointer' }} onClick={() => navTo('landing')}>
         <HHLogo />
       </div>
       <div style={{ padding: '0 12px' }}>
         <div style={{ padding: '0 12px 10px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.16em', color: 'var(--ink-4)' }}>WORKSPACE</div>
         {items.map(it => (
-          <div key={it.id} style={{
+          <div key={it.id} onClick={() => navTo(it.id)} style={{
             display: 'flex', alignItems: 'center', gap: 12,
             padding: '9px 12px', borderRadius: 8,
             color: it.id === active ? 'var(--ink)' : 'var(--ink-3)',
@@ -98,7 +113,9 @@ function HHSideNav({ active = 'simulator' }) {
             border: it.id === active ? '1px solid rgba(0,229,255,0.20)' : '1px solid transparent',
             cursor: 'pointer', fontSize: 13, marginBottom: 2,
             position: 'relative',
-          }}>
+          }}
+          onMouseEnter={e => { if (it.id !== active) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+          onMouseLeave={e => { if (it.id !== active) e.currentTarget.style.background = 'transparent'; }}>
             <span style={{ color: it.id === active ? 'var(--cyan)' : 'var(--ink-4)', fontSize: 14, width: 14, display: 'inline-block', textAlign: 'center' }}>{it.icon}</span>
             {it.label}
             {it.id === active && <span style={{ position: 'absolute', right: 10, width: 4, height: 4, borderRadius: '50%', background: 'var(--cyan)', boxShadow: '0 0 8px var(--cyan-glow)' }} />}
@@ -109,26 +126,29 @@ function HHSideNav({ active = 'simulator' }) {
         <div style={{ padding: '0 12px 10px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.16em', color: 'var(--ink-4)' }}>ACTIVE PROJECT</div>
         <div style={{ padding: '12px 14px', borderRadius: 10, background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 600 }}>AlFeNi · v3.2</div>
-            <span className="hh-chip hh-chip-emerald" style={{ padding: '2px 6px', fontSize: 9 }}>LIVE</span>
+            <div style={{ fontSize: 12.5, fontWeight: 600 }}>{ctx ? window.HHfmtAlloy(ctx.composition) : 'AlFeNi'} · v3.2</div>
+            <span className={`hh-chip ${ctx?.running ? 'hh-chip-gold' : 'hh-chip-emerald'}`} style={{ padding: '2px 6px', fontSize: 9 }}>{ctx?.running ? 'RUNNING' : 'LIVE'}</span>
           </div>
-          <div style={{ fontSize: 11, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)' }}>run-78f3a · t = 3600s</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)' }}>{lastRun?.id || 'run-78f3a'} · t = {ctx?.tSec ?? 3600}s</div>
         </div>
       </div>
       <div style={{ marginTop: 'auto', padding: '0 12px' }}>
         {bottom.map(it => (
-          <div key={it.id} style={{
+          <div key={it.id} onClick={() => navTo(it.id)} style={{
             display: 'flex', alignItems: 'center', gap: 12,
-            padding: '8px 12px', borderRadius: 8, color: 'var(--ink-3)', fontSize: 13, cursor: 'pointer',
+            padding: '8px 12px', borderRadius: 8,
+            color: it.id === active ? 'var(--ink)' : 'var(--ink-3)',
+            background: it.id === active ? 'rgba(0,229,255,0.06)' : 'transparent',
+            fontSize: 13, cursor: 'pointer',
           }}>
-            <span style={{ color: 'var(--ink-4)', width: 14, textAlign: 'center' }}>{it.icon}</span>{it.label}
+            <span style={{ color: it.id === active ? 'var(--cyan)' : 'var(--ink-4)', width: 14, textAlign: 'center' }}>{it.icon}</span>{it.label}
           </div>
         ))}
-        <div style={{ padding: '14px 12px', marginTop: 8, borderTop: '1px solid var(--border-soft)', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, var(--cyan), var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#001' }}>CL</div>
+        <div onClick={() => navTo('settings')} style={{ padding: '14px 12px', marginTop: 8, borderTop: '1px solid var(--border-soft)', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+          <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, var(--cyan), var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#001' }}>{user.initials}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 500 }}>C. Lukwichi</div>
-            <div style={{ fontSize: 10.5, color: 'var(--ink-4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>ESIS · Metallurgy</div>
+            <div style={{ fontSize: 12, fontWeight: 500 }}>{user.name}</div>
+            <div style={{ fontSize: 10.5, color: 'var(--ink-4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.org}</div>
           </div>
         </div>
       </div>
@@ -138,6 +158,8 @@ function HHSideNav({ active = 'simulator' }) {
 
 /* ---------------- APP TOP BAR ---------------- */
 function HHTopBar({ title, subtitle, actions }) {
+  const ctx = window.useHH && window.useHH();
+  const lastRun = ctx?.runs?.[0];
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -148,18 +170,20 @@ function HHTopBar({ title, subtitle, actions }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ fontSize: 12, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)' }}>HydroHEA / Projects /</div>
           <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: '-0.01em' }}>{title}</div>
-          <span className="hh-chip hh-chip-cyan">{subtitle || 'AlFeNi · BCC'}</span>
+          <span className="hh-chip hh-chip-cyan">{subtitle || (ctx ? window.HHfmtAlloy(ctx.composition) + ' · BCC' : 'AlFeNi · BCC')}</span>
         </div>
         <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4, fontFamily: 'var(--font-mono)' }}>
-          Last solver run · 12 sec ago · Δerror &lt; 0.4% · mesh: fine (14 280 elems)
+          Last solver run · {lastRun?.id || 'run-78f3a'} · Δerror &lt; 0.4% · mesh: fine (14 280 elems)
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {actions || (
           <>
-            <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }}>Export</button>
-            <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }}>Share</button>
-            <button className="hh-btn hh-btn-primary" style={{ padding: '8px 16px', fontSize: 12 }}>▶ Run simulation</button>
+            <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }} onClick={() => ctx && ctx.exportItem('Run PDF')}>Export</button>
+            <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }} onClick={() => ctx && ctx.shareLink()}>Share</button>
+            <button className="hh-btn hh-btn-primary" disabled={ctx?.running} style={{ padding: '8px 16px', fontSize: 12, opacity: ctx?.running ? 0.7 : 1 }} onClick={() => ctx && ctx.runSimulation()}>
+              {ctx?.running ? '◐ Running…' : '▶ Run simulation'}
+            </button>
           </>
         )}
       </div>

@@ -5,7 +5,7 @@
 /* ----------- Problem strip ----------- */
 function HHProblem() {
   return (
-    <section style={{ padding: '60px 80px', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--bg-1)' }}>
+    <section id="problem" style={{ padding: '60px 80px', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--bg-1)' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.4fr', gap: 64, alignItems: 'start' }}>
         <div>
           <div className="hh-eyebrow" style={{ marginBottom: 14 }}><span className="dot" style={{ background: 'var(--coral)', boxShadow: '0 0 8px var(--coral)' }} />WHY IT MATTERS</div>
@@ -38,7 +38,7 @@ function HHPipeline() {
     { n: '05', t: 'Optimize', d: 'Pareto frontier of capacity vs. stress vs. cycling stability — export-ready engineering reports.', icon: '◊' },
   ];
   return (
-    <section style={{ padding: '100px 80px', position: 'relative' }} className="hh-radial-cyan">
+    <section id="pipeline" style={{ padding: '100px 80px', position: 'relative' }} className="hh-radial-cyan">
       <div style={{ textAlign: 'center', marginBottom: 60 }}>
         <div className="hh-eyebrow" style={{ marginBottom: 16, justifyContent: 'center' }}><span className="dot" />PLATFORM PIPELINE</div>
         <h2 className="hh-display" style={{ fontSize: 44, margin: 0, marginBottom: 14 }}>From composition to optimised alloy in five steps.</h2>
@@ -75,8 +75,10 @@ function HHPipeline() {
 
 /* ----------- Capabilities bento ----------- */
 function HHCapabilities() {
+  const ctx = window.useHH && window.useHH();
+  const go = id => () => ctx && ctx.navigate(id);
   return (
-    <section style={{ padding: '60px 80px 100px' }}>
+    <section id="capabilities" style={{ padding: '60px 80px 100px' }}>
       <div style={{ marginBottom: 48, display: 'flex', justifyContent: 'space-between', alignItems: 'end' }}>
         <div>
           <div className="hh-eyebrow" style={{ marginBottom: 16 }}><span className="dot" style={{ background: 'var(--gold)', boxShadow: '0 0 8px var(--gold)' }} />CAPABILITIES</div>
@@ -89,7 +91,7 @@ function HHCapabilities() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gridAutoRows: 240, gap: 16 }}>
         {/* big card: simulator */}
-        <div className="hh-card hh-card-elev" style={{ gridColumn: 'span 2', gridRow: 'span 2', padding: 24, position: 'relative', overflow: 'hidden' }}>
+        <div onClick={go('simulator')} className="hh-card hh-card-elev" style={{ gridColumn: 'span 2', gridRow: 'span 2', padding: 24, position: 'relative', overflow: 'hidden', cursor: 'pointer' }}>
           <div style={{ position: 'absolute', top: 0, right: 0, width: '60%', height: '100%', background: 'radial-gradient(circle at top right, rgba(0,229,255,0.18), transparent 60%)' }} />
           <span className="hh-chip hh-chip-cyan">FLAGSHIP</span>
           <h3 className="hh-display" style={{ fontSize: 26, margin: '14px 0 8px' }}>Multi-Physics Simulator</h3>
@@ -117,7 +119,7 @@ function HHCapabilities() {
         </div>
 
         {/* AI */}
-        <div className="hh-card hh-card-elev" style={{ gridColumn: 'span 2', padding: 22, position: 'relative', overflow: 'hidden', borderColor: 'rgba(255,181,71,0.25)' }}>
+        <div onClick={go('ai')} className="hh-card hh-card-elev" style={{ gridColumn: 'span 2', padding: 22, position: 'relative', overflow: 'hidden', borderColor: 'rgba(255,181,71,0.25)', cursor: 'pointer' }}>
           <div style={{ position: 'absolute', top: 0, right: 0, width: '60%', height: '100%', background: 'radial-gradient(circle at top right, rgba(255,181,71,0.16), transparent 60%)' }} />
           <span className="hh-chip hh-chip-gold">AI</span>
           <h3 className="hh-display" style={{ fontSize: 20, margin: '12px 0 6px' }}>Composition Predictor</h3>
@@ -132,7 +134,7 @@ function HHCapabilities() {
         </div>
 
         {/* materials library */}
-        <div className="hh-card" style={{ padding: 22 }}>
+        <div onClick={go('library')} className="hh-card" style={{ padding: 22, cursor: 'pointer' }}>
           <span className="hh-chip">DATABASE</span>
           <h3 className="hh-display" style={{ fontSize: 18, margin: '12px 0 6px' }}>Materials Library</h3>
           <p style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.5 }}>
@@ -141,7 +143,7 @@ function HHCapabilities() {
         </div>
 
         {/* validation */}
-        <div className="hh-card" style={{ padding: 22 }}>
+        <div onClick={go('validation')} className="hh-card" style={{ padding: 22, cursor: 'pointer' }}>
           <span className="hh-chip hh-chip-emerald">VALIDATION</span>
           <h3 className="hh-display" style={{ fontSize: 18, margin: '12px 0 6px' }}>Mesh Sensitivity Studio</h3>
           <p style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.5 }}>
@@ -150,7 +152,7 @@ function HHCapabilities() {
         </div>
 
         {/* report */}
-        <div className="hh-card hh-card-elev" style={{ gridColumn: 'span 2', padding: 22, position: 'relative', overflow: 'hidden', borderColor: 'rgba(167,139,250,0.25)' }}>
+        <div onClick={go('reports')} className="hh-card hh-card-elev" style={{ gridColumn: 'span 2', padding: 22, position: 'relative', overflow: 'hidden', borderColor: 'rgba(167,139,250,0.25)', cursor: 'pointer' }}>
           <div style={{ position: 'absolute', top: 0, right: 0, width: '60%', height: '100%', background: 'radial-gradient(circle at top right, rgba(167,139,250,0.14), transparent 60%)' }} />
           <span className="hh-chip hh-chip-violet">EXPORT</span>
           <h3 className="hh-display" style={{ fontSize: 20, margin: '12px 0 6px' }}>Engineering Reports</h3>
@@ -173,7 +175,7 @@ function HHAIBand() {
     { name: 'CALPHAD baseline', mae: '0.0092', rmse: '0.0108', r2: '0.812', leader: false },
   ];
   return (
-    <section style={{ padding: '100px 80px', background: 'linear-gradient(180deg, var(--bg-0), var(--bg-1), var(--bg-0))', position: 'relative', overflow: 'hidden' }}>
+    <section id="ai-band" style={{ padding: '100px 80px', background: 'linear-gradient(180deg, var(--bg-0), var(--bg-1), var(--bg-0))', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, rgba(167,139,250,0.08), transparent 70%)' }} />
       <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
         <div>
@@ -231,7 +233,7 @@ function HHAIBand() {
 /* ----------- Outcomes / Results ----------- */
 function HHOutcomes() {
   return (
-    <section style={{ padding: '80px 80px', borderTop: '1px solid var(--border)' }}>
+    <section id="outcomes" style={{ padding: '80px 80px', borderTop: '1px solid var(--border)' }}>
       <div className="hh-eyebrow" style={{ marginBottom: 14 }}><span className="dot" style={{ background: 'var(--emerald)' }} />FIELD-PROVEN RESULTS</div>
       <h2 className="hh-display" style={{ fontSize: 36, margin: 0, marginBottom: 48, maxWidth: 700, lineHeight: 1.15 }}>
         Cut hydrogen-storage R&amp;D timelines from quarters to weeks.
@@ -283,9 +285,14 @@ function HHOutcomes() {
 
 /* ----------- CTA + footer ----------- */
 function HHCTAFooter() {
+  const ctx = window.useHH && window.useHH();
+  const scrollTo = (id) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
   return (
     <>
-      <section style={{ padding: '100px 80px', position: 'relative', overflow: 'hidden' }}>
+      <section id="cta" style={{ padding: '100px 80px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, rgba(0,229,255,0.12), transparent 65%), linear-gradient(135deg, #0A1830, var(--bg-0))' }} />
         <div className="hh-grid-bg" style={{ position: 'absolute', inset: 0, opacity: 0.4, maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 75%)' }} />
         <div style={{ position: 'relative', textAlign: 'center', maxWidth: 720, margin: '0 auto' }}>
@@ -296,8 +303,8 @@ function HHCTAFooter() {
             Free 14-day pilot for R&amp;D teams. Bring your composition target — we'll deliver a validated multi-physics workspace.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
-            <button className="hh-btn hh-btn-primary" style={{ padding: '14px 24px', fontSize: 14 }}>Start pilot — free →</button>
-            <button className="hh-btn hh-btn-ghost" style={{ padding: '14px 24px', fontSize: 14 }}>Book intro call</button>
+            <button className="hh-btn hh-btn-primary" style={{ padding: '14px 24px', fontSize: 14 }} onClick={() => ctx && ctx.navigate('signin')}>Start pilot — free →</button>
+            <button className="hh-btn hh-btn-ghost" style={{ padding: '14px 24px', fontSize: 14 }} onClick={() => ctx && ctx.openModal({ content: <window.HHModalDemo ctx={ctx} /> })}>Book intro call</button>
           </div>
         </div>
       </section>
@@ -305,11 +312,11 @@ function HHCTAFooter() {
       <footer style={{ padding: '40px 80px 32px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-1)' }}>
         <window.HHLogo />
         <div style={{ display: 'flex', gap: 32, fontSize: 12, color: 'var(--ink-3)' }}>
-          <a style={{ color: 'inherit' }}>Platform</a>
-          <a style={{ color: 'inherit' }}>Science</a>
-          <a style={{ color: 'inherit' }}>Pricing</a>
-          <a style={{ color: 'inherit' }}>Research</a>
-          <a style={{ color: 'inherit' }}>Careers</a>
+          <a onClick={() => scrollTo('capabilities')} style={{ color: 'inherit', cursor: 'pointer' }}>Platform</a>
+          <a onClick={() => scrollTo('pipeline')} style={{ color: 'inherit', cursor: 'pointer' }}>Science</a>
+          <a onClick={() => scrollTo('cta')} style={{ color: 'inherit', cursor: 'pointer' }}>Pricing</a>
+          <a onClick={() => scrollTo('ai-band')} style={{ color: 'inherit', cursor: 'pointer' }}>Research</a>
+          <a onClick={() => ctx && ctx.toast('Careers page is under construction', 'info')} style={{ color: 'inherit', cursor: 'pointer' }}>Careers</a>
         </div>
         <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-4)' }}>
           © 2025 HydroHEA · Built on metallurgy research by C. Lukwichi
