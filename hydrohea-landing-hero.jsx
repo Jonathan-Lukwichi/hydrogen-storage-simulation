@@ -3,8 +3,9 @@
 // =============================================================
 
 function HHLandingHero() {
+  const ctx = window.useHH && window.useHH();
   return (
-    <section style={{ position: 'relative', padding: '120px 80px 80px', overflow: 'hidden' }} className="hh-radial-cyan hh-noise">
+    <section id="hero" style={{ position: 'relative', padding: '120px 80px 80px', overflow: 'hidden' }} className="hh-radial-cyan hh-noise">
       {/* grid bg */}
       <div className="hh-grid-bg" style={{ position: 'absolute', inset: 0, opacity: 0.5, maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 75%)' }} />
 
@@ -25,10 +26,10 @@ function HHLandingHero() {
           </p>
 
           <div style={{ display: 'flex', gap: 12, marginBottom: 48 }}>
-            <button className="hh-btn hh-btn-primary" style={{ padding: '14px 22px', fontSize: 14 }}>
+            <button className="hh-btn hh-btn-primary" style={{ padding: '14px 22px', fontSize: 14 }} onClick={() => ctx && ctx.navigate('simulator')}>
               Launch interactive demo <span>→</span>
             </button>
-            <button className="hh-btn hh-btn-ghost" style={{ padding: '14px 22px', fontSize: 14 }}>
+            <button className="hh-btn hh-btn-ghost" style={{ padding: '14px 22px', fontSize: 14 }} onClick={() => ctx && ctx.openModal({ wide: true, content: <window.HHModalVideo ctx={ctx} /> })}>
               <span style={{ fontSize: 11 }}>▶</span> Watch 90-sec overview
             </button>
           </div>

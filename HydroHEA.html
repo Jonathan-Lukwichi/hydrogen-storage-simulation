@@ -15,7 +15,7 @@
   html, body, #root { height: 100%; }
   body { margin: 0; background: #050811; }
 
-  /* Route switcher pill — floats top-right on landing, replaced by side nav on app screens. */
+  /* Route switcher pill — floats top-right when no marketing/side nav is showing. */
   .hh-route-pill {
     position: fixed; top: 16px; right: 24px; z-index: 200;
     display: inline-flex; align-items: center; gap: 2px;
@@ -25,13 +25,17 @@
     backdrop-filter: blur(14px);
     box-shadow: 0 8px 30px rgba(0,0,0,0.4);
     font-family: var(--font-mono);
+    max-width: calc(100vw - 48px);
+    overflow-x: auto;
   }
+  .hh-route-pill::-webkit-scrollbar { display: none; }
   .hh-route-pill button {
     appearance: none; border: 0; background: transparent;
     color: var(--ink-3); font-family: inherit;
     font-size: 11px; letter-spacing: 0.06em;
     padding: 7px 12px; border-radius: 999px; cursor: pointer;
     transition: color .15s ease, background .15s ease;
+    white-space: nowrap;
   }
   .hh-route-pill button:hover { color: var(--ink); }
   .hh-route-pill button.active {
@@ -40,13 +44,21 @@
     box-shadow: inset 0 0 0 1px var(--border-strong);
   }
 
-  /* App-screen container: take full viewport so the cockpit screens render
-     side-nav + content edge-to-edge instead of inside a 1440×1100 artboard. */
+  /* App-screen containers. */
   .hh-screen { width: 100%; height: 100vh; overflow: hidden; }
   .hh-screen-scroll { width: 100%; min-height: 100vh; overflow-x: hidden; }
   /* The shared .hh-art class clips overflow for artboards. The landing page is
      a tall marketing page, so let it expand naturally when used as a route. */
   .hh-screen-scroll > .hh-art { height: auto; overflow: visible; }
+
+  /* Toast slide-in. */
+  @keyframes hh-toast-in {
+    from { transform: translateY(-8px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  /* Running spinner used inline. */
+  .hh-spin { animation: hh-spin 0.9s linear infinite; display: inline-block; }
 </style>
 
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
@@ -57,6 +69,7 @@
 <div id="root"></div>
 
 <script type="text/babel" src="hydrohea-shell.jsx"></script>
+<script type="text/babel" src="hydrohea-app.jsx"></script>
 <script type="text/babel" src="hydrohea-landing-hero.jsx"></script>
 <script type="text/babel" src="hydrohea-landing.jsx"></script>
 <script type="text/babel" src="hydrohea-dashboard.jsx"></script>
@@ -68,59 +81,70 @@
 const { useState, useEffect } = React;
 
 const ROUTES = [
-  { id: 'landing',    label: 'Landing',     component: () => window.HHLanding },
-  { id: 'simulator',  label: 'Simulator',   component: () => window.HHDashboard },
-  { id: 'ai',         label: 'AI Predictor',component: () => window.HHAIPredictor },
-  { id: 'library',    label: 'Materials',   component: () => window.HHLibrary },
-  { id: 'validation', label: 'Validation',  component: () => window.HHValidation },
+  { id: 'landing',    label: 'Landing',    component: 'HHLanding' },
+  { id: 'signin',     label: 'Sign in',    component: 'HHSignIn' },
+  { id: 'overview',   label: 'Overview',   component: 'HHOverview' },
+  { id: 'home',       label: 'Overview',   component: 'HHOverview', hidden: true },  // alias from side-nav
+  { id: 'simulator',  label: 'Simulator',  component: 'HHDashboard' },
+  { id: 'ai',         label: 'AI',         component: 'HHAIPredictor' },
+  { id: 'library',    label: 'Library',    component: 'HHLibrary' },
+  { id: 'validation', label: 'Validation', component: 'HHValidation' },
+  { id: 'reports',    label: 'Reports',    component: 'HHReports' },
+  { id: 'docs',       label: 'Docs',       component: 'HHDocs' },
+  { id: 'settings',   label: 'Settings',   component: 'HHSettings' },
 ];
+
+const ROUTE_MAP = Object.fromEntries(ROUTES.map(r => [r.id, r]));
 
 function routeFromHash() {
   const h = (window.location.hash || '').replace('#', '');
-  return ROUTES.some(r => r.id === h) ? h : 'landing';
+  return ROUTE_MAP[h] ? h : 'landing';
 }
 
 function App() {
   const [route, setRoute] = useState(routeFromHash);
 
   useEffect(() => {
-    const onHash = () => setRoute(routeFromHash());
+    const onHash = () => { setRoute(routeFromHash()); window.scrollTo(0, 0); };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
   const go = id => { window.location.hash = id; };
 
-  const current = ROUTES.find(r => r.id === route) || ROUTES[0];
-  const Screen = current.component();
+  const current = ROUTE_MAP[route] || ROUTE_MAP.landing;
+  const Screen = window[current.component];
 
-  // Landing scrolls (tall marketing page); cockpit screens are full-viewport
-  // single-screen layouts with their own internal scroll regions.
-  const isLanding = route === 'landing';
+  // Landing & sign-in have their own internal full-page layouts.
+  const useScroll = route === 'landing';
+  // Hide the dev-route pill on landing (marketing nav takes over) and sign-in (focused entry).
+  const showPill = route !== 'landing' && route !== 'signin';
 
   return (
-    <>
-      <div className="hh-route-pill" role="tablist" aria-label="HydroHEA sections">
-        {ROUTES.map(r => (
-          <button
-            key={r.id}
-            type="button"
-            role="tab"
-            aria-selected={r.id === route}
-            className={r.id === route ? 'active' : ''}
-            onClick={() => go(r.id)}
-          >{r.label.toUpperCase()}</button>
-        ))}
-      </div>
+    <window.HHProvider>
+      {showPill && (
+        <div className="hh-route-pill" role="tablist" aria-label="HydroHEA sections">
+          {ROUTES.filter(r => !r.hidden).map(r => (
+            <button
+              key={r.id}
+              type="button"
+              role="tab"
+              aria-selected={r.id === route}
+              className={r.id === route ? 'active' : ''}
+              onClick={() => go(r.id)}
+            >{r.label.toUpperCase()}</button>
+          ))}
+        </div>
+      )}
 
-      <div className={isLanding ? 'hh-screen-scroll' : 'hh-screen'}>
+      <div className={useScroll ? 'hh-screen-scroll' : 'hh-screen'}>
         {Screen ? <Screen /> : (
           <div style={{ padding: 40, color: '#C9D2E3', fontFamily: 'Inter, sans-serif' }}>
             Loading {current.label}…
           </div>
         )}
       </div>
-    </>
+    </window.HHProvider>
   );
 }
 

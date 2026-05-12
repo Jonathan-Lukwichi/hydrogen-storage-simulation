@@ -3,17 +3,31 @@
 // =============================================================
 
 function HHAIPredictor() {
-  const [al, setAl] = React.useState(30);
-  const [fe, setFe] = React.useState(35);
-  const [ni, setNi] = React.useState(35);
-  const [temp, setTemp] = React.useState(298);
+  const ctx = window.useHH();
+  const al = ctx.composition.al, fe = ctx.composition.fe, ni = ctx.composition.ni;
+  const setAl = v => ctx.setComposition({ ...ctx.composition, al: v });
+  const setFe = v => ctx.setComposition({ ...ctx.composition, fe: v });
+  const setNi = v => ctx.setComposition({ ...ctx.composition, ni: v });
+  const temp = ctx.opTemp;
+  const setTemp = ctx.setOpTemp;
 
-  // simple synthetic prediction
+  const [predicting, setPredicting] = React.useState(false);
+  const runPredict = async () => {
+    if (predicting) return;
+    setPredicting(true);
+    ctx.toast('XGBoost-HEA v3 inference…', 'info');
+    await new Promise(r => setTimeout(r, 700));
+    setPredicting(false);
+    const p = window.HHpredict(ctx.composition, temp);
+    ctx.toast(`Prediction · ${p.uptake.toFixed(3)} wt% · 94% confidence`, 'success');
+  };
+
+  const p = window.HHpredict(ctx.composition, temp);
   const pred = {
-    uptake: (0.10 + 0.0015 * ni + 0.0008 * (al - 30) - 0.0002 * Math.abs(temp - 350)).toFixed(3),
-    enthalpy: -(25 + 0.3 * ni + 0.15 * al).toFixed(1),
-    diffusivity: (1.8 + 0.02 * fe + 0.005 * (temp - 298)).toFixed(2),
-    stability: (0.78 + 0.002 * ni - 0.001 * (al - 30)).toFixed(3),
+    uptake: p.uptake.toFixed(3),
+    enthalpy: p.enthalpy.toFixed(1),
+    diffusivity: p.diffusivity.toFixed(2),
+    stability: p.stability.toFixed(3),
   };
 
   const shapData = [
@@ -33,8 +47,10 @@ function HHAIPredictor() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-0)' }}>
         <window.HHTopBar title="AI Composition Predictor" subtitle="✦ XGBoost-HEA v3" actions={
           <>
-            <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }}>Optimize (Pareto)</button>
-            <button className="hh-btn hh-btn-gold" style={{ padding: '8px 16px', fontSize: 12 }}>✦ Predict</button>
+            <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }} onClick={() => ctx.openModal({ wide: true, content: <window.HHModalOptimize ctx={ctx} /> })}>Optimize (Pareto)</button>
+            <button className="hh-btn hh-btn-gold" disabled={predicting} style={{ padding: '8px 16px', fontSize: 12, opacity: predicting ? 0.7 : 1 }} onClick={runPredict}>
+              {predicting ? '◐ Predicting…' : '✦ Predict'}
+            </button>
           </>
         }/>
 
@@ -134,9 +150,9 @@ function HHAIPredictor() {
                 </div>
 
                 {[
-                  { name: 'Al₂₂Fe₃₀Ni₄₈', delta: '+18.2%', target: 'uptake', conf: 94 },
-                  { name: 'Al₃₂Fe₂₈Ni₄₀', delta: '+12.7%', target: 'stability', conf: 89 },
-                  { name: 'Al₂₈Fe₄₀Ni₃₂', delta: '+9.4%', target: 'diffusivity', conf: 86 },
+                  { name: 'Al₂₂Fe₃₀Ni₄₈', apply: 'Al22Fe30Ni48', delta: '+18.2%', target: 'uptake', conf: 94 },
+                  { name: 'Al₃₂Fe₂₈Ni₄₀', apply: 'Al32Fe28Ni40', delta: '+12.7%', target: 'stability', conf: 89 },
+                  { name: 'Al₂₈Fe₄₀Ni₃₂', apply: 'Al28Fe40Ni32', delta: '+9.4%', target: 'diffusivity', conf: 86 },
                 ].map((r, i) => (
                   <div key={i} style={{ padding: '10px 0', borderTop: i ? '1px solid var(--border-soft)' : 'none', display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 70px', alignItems: 'center', gap: 12 }}>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink)' }}>{r.name}</span>
@@ -147,7 +163,7 @@ function HHAIPredictor() {
                       </div>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--gold)' }}>{r.conf}%</span>
                     </div>
-                    <button className="hh-btn hh-btn-ghost" style={{ padding: '4px 8px', fontSize: 10 }}>Apply</button>
+                    <button className="hh-btn hh-btn-ghost" style={{ padding: '4px 8px', fontSize: 10 }} onClick={() => ctx.applyComposition(r.apply)}>Apply</button>
                   </div>
                 ))}
               </div>
@@ -191,18 +207,18 @@ function HHAIPredictor() {
                 <thead><tr><th>ALLOY</th><th>UPTAKE</th><th>STABILITY</th><th>MODEL</th><th>CONF.</th></tr></thead>
                 <tbody>
                   {[
-                    ['Al₂₂Fe₃₀Ni₄₈', '0.132 wt%', '0.812', 'XGBoost-v3', 94],
-                    ['Al₂₈Fe₃₂Ni₄₀', '0.124 wt%', '0.798', 'GPR', 91],
-                    ['Al₃₀Fe₃₅Ni₃₅', '0.114 wt%', '0.781', 'XGBoost-v3', 96],
-                    ['Al₂₆Fe₃₆Ni₃₈', '0.108 wt%', '0.770', 'NN-MLP', 87],
-                    ['Al₃₆Fe₂₆Ni₃₈', '0.101 wt%', '0.762', 'XGBoost-v3', 90],
+                    ['Al₂₂Fe₃₀Ni₄₈', 'Al22Fe30Ni48', '0.132 wt%', '0.812', 'XGBoost-v3', 94],
+                    ['Al₂₈Fe₃₂Ni₄₀', 'Al28Fe32Ni40', '0.124 wt%', '0.798', 'GPR', 91],
+                    ['Al₃₀Fe₃₅Ni₃₅', 'Al30Fe35Ni35', '0.114 wt%', '0.781', 'XGBoost-v3', 96],
+                    ['Al₂₆Fe₃₆Ni₃₈', 'Al26Fe36Ni38', '0.108 wt%', '0.770', 'NN-MLP', 87],
+                    ['Al₃₆Fe₂₆Ni₃₈', 'Al36Fe26Ni38', '0.101 wt%', '0.762', 'XGBoost-v3', 90],
                   ].map((r, i) => (
-                    <tr key={i}>
+                    <tr key={i} onClick={() => ctx.applyComposition(r[1])} style={{ cursor: 'pointer' }}>
                       <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink)' }}>{r[0]}</td>
-                      <td style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)' }}>{r[1]}</td>
-                      <td style={{ fontFamily: 'var(--font-mono)' }}>{r[2]}</td>
-                      <td><span className="hh-chip hh-chip-gold" style={{ padding: '2px 6px', fontSize: 9 }}>{r[3]}</span></td>
-                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--emerald)' }}>{r[4]}%</td>
+                      <td style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)' }}>{r[2]}</td>
+                      <td style={{ fontFamily: 'var(--font-mono)' }}>{r[3]}</td>
+                      <td><span className="hh-chip hh-chip-gold" style={{ padding: '2px 6px', fontSize: 9 }}>{r[4]}</span></td>
+                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--emerald)' }}>{r[5]}%</td>
                     </tr>
                   ))}
                 </tbody>

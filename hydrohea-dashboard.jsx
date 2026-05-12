@@ -3,14 +3,17 @@
 // =============================================================
 
 function HHDashboard() {
-  const [tSec, setTSec] = React.useState(1800);
-  const [boundaryT, setBoundaryT] = React.useState(500);
-  const [surfConc, setSurfConc] = React.useState(8.0);
-  const [activeField, setActiveField] = React.useState('H₂ Concentration');
+  const ctx = window.useHH();
+  const tSec = ctx.tSec, setTSec = ctx.setTSec;
+  const boundaryT = ctx.opTemp, setBoundaryT = ctx.setOpTemp;
+  const surfConc = ctx.surfConc, setSurfConc = ctx.setSurfConc;
+  const activeField = ctx.activeField, setActiveField = ctx.setActiveField;
+  const c = ctx.composition;
+  const p = window.HHpredict(c, boundaryT);
 
   const tNorm = tSec / 3600;
   const fields = {
-    'H₂ Concentration': { type: 'concentration', cmap: 'h2', unit: 'mol/m³', min: '0', max: '8.0×10³', val: (8.0 * (0.05 + 0.95 * tNorm)).toFixed(2) },
+    'H₂ Concentration': { type: 'concentration', cmap: 'h2', unit: 'mol/m³', min: '0', max: surfConc.toFixed(1) + '×10³', val: (surfConc * (0.05 + 0.95 * tNorm)).toFixed(2) },
     'Temperature':      { type: 'temperature',   cmap: 'plasma', unit: 'K', min: '298', max: `${boundaryT}`, val: (298 + (boundaryT - 298) * tNorm).toFixed(0) },
     'von Mises Stress': { type: 'stress',        cmap: 'viridis', unit: 'Pa',  min: '0', max: '4.5×10⁴', val: (4.5 * tNorm).toFixed(2) + '×10⁴' },
   };
@@ -20,7 +23,7 @@ function HHDashboard() {
   // synthetic curves
   const curveH = Array.from({length: 60}, (_, i) => {
     const x = i / 59 * 3600;
-    const y = 8 * (1 - Math.exp(-x / 800));
+    const y = surfConc * (1 - Math.exp(-x / 800));
     return [x, y];
   });
   const curveT = Array.from({length: 60}, (_, i) => {
@@ -39,21 +42,21 @@ function HHDashboard() {
       <window.HHSideNav active="simulator" />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-0)' }}>
-        <window.HHTopBar title="Multi-Physics Simulator" subtitle="AlFeNi · BCC · 1 mm × 5 mm" />
+        <window.HHTopBar title="Multi-Physics Simulator" subtitle={`${window.HHfmtAlloy(c)} · BCC · 1 mm × 5 mm`} />
 
         {/* main grid */}
         <div className="hh-scroll" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
-          {/* KPI row */}
+          {/* KPI row — values follow current composition/temperature */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 20 }}>
-            <window.HHKpi label="H₂ uptake" value="0.114" unit="wt%" delta="+8.2%" accent="cyan"
+            <window.HHKpi label="H₂ uptake" value={p.uptake.toFixed(3)} unit="wt%" delta="+8.2%" accent="cyan"
               spark="M0 18 C20 16, 40 12, 60 7 S90 4, 100 4" />
-            <window.HHKpi label="τ saturation" value="1 820" unit="s" delta="-12%" accent="violet"
+            <window.HHKpi label="τ saturation" value={(1820 - (p.diffusivity - 2.4) * 80).toFixed(0)} unit="s" delta="-12%" accent="violet"
               spark="M0 22 C20 18, 40 14, 60 10 S90 5, 100 4" />
-            <window.HHKpi label="ΔT surface" value="202" unit="K" delta="+1.4%" accent="gold"
+            <window.HHKpi label="ΔT surface" value={(boundaryT - 298).toString()} unit="K" delta="+1.4%" accent="gold"
               spark="M0 20 L20 18 L40 12 L60 8 L80 6 L100 5" />
-            <window.HHKpi label="σ_max" value="4.32" unit="×10⁴ Pa" delta="-3.1%" accent="coral"
+            <window.HHKpi label="σ_max" value={(4.5 * tNorm).toFixed(2)} unit="×10⁴ Pa" delta="-3.1%" accent="coral"
               spark="M0 22 C20 18, 40 10, 60 6 S90 4, 100 8" />
-            <window.HHKpi label="Diffusivity" value="2.41" unit="×10⁻⁷ m²/s" delta="+5.7%" accent="emerald"
+            <window.HHKpi label="Diffusivity" value={p.diffusivity.toFixed(2)} unit="×10⁻⁷ m²/s" delta="+5.7%" accent="emerald"
               spark="M0 16 C20 14, 40 10, 60 6 S90 3, 100 2" />
           </div>
 
@@ -108,12 +111,13 @@ function HHDashboard() {
               <div style={{ marginTop: 22, padding: 14, background: 'var(--bg-0)', borderRadius: 10, border: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <button style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--cyan)', color: '#001', border: 'none', fontSize: 11, cursor: 'pointer' }}>▶</button>
+                    <button onClick={() => { if (tSec >= 3600) setTSec(0); ctx.setPlaying(!ctx.playing); }} style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--cyan)', color: '#001', border: 'none', fontSize: 11, cursor: 'pointer' }}>{ctx.playing ? '❚❚' : '▶'}</button>
+                    <button onClick={() => { ctx.setPlaying(false); setTSec(0); }} title="Reset" style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--surface-2)', color: 'var(--ink-2)', border: '1px solid var(--border)', fontSize: 11, cursor: 'pointer' }}>↺</button>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-2)' }}>t = <span style={{ color: 'var(--cyan)' }} className="hh-num">{tSec}</span> / 3 600 s</span>
                   </div>
                   <div style={{ display: 'flex', gap: 4 }}>
-                    {['0.25×', '1×', '4×', '16×'].map((s, i) => (
-                      <div key={s} style={{ padding: '3px 8px', fontFamily: 'var(--font-mono)', fontSize: 10, borderRadius: 4, background: i === 1 ? 'var(--surface-2)' : 'transparent', color: i === 1 ? 'var(--ink)' : 'var(--ink-3)', cursor: 'pointer' }}>{s}</div>
+                    {['0.25×', '1×', '4×', '16×'].map(s => (
+                      <div key={s} onClick={() => ctx.setPlaySpeed(s)} style={{ padding: '3px 8px', fontFamily: 'var(--font-mono)', fontSize: 10, borderRadius: 4, background: s === ctx.playSpeed ? 'var(--surface-2)' : 'transparent', color: s === ctx.playSpeed ? 'var(--ink)' : 'var(--ink-3)', cursor: 'pointer' }}>{s}</div>
                     ))}
                   </div>
                 </div>
@@ -128,16 +132,19 @@ function HHDashboard() {
             <div className="hh-card hh-card-elev" style={{ padding: 20 }}>
               <div className="hh-eyebrow" style={{ marginBottom: 14 }}><span className="dot" style={{ background: 'var(--gold)' }} />SIMULATION INPUTS</div>
 
-              {/* composition */}
+              {/* composition (driven by AI Predictor sliders / Apply actions) */}
               <div style={{ marginBottom: 18 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, alignItems: 'center' }}>
                   <span style={{ fontSize: 12, color: 'var(--ink-2)' }}>Alloy composition</span>
-                  <span className="hh-chip hh-chip-cyan">Al₃₀ Fe₃₅ Ni₃₅</span>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <span className="hh-chip hh-chip-cyan">Al{c.al} Fe{c.fe} Ni{c.ni}</span>
+                    <button className="hh-btn hh-btn-ghost" style={{ padding: '3px 8px', fontSize: 10 }} onClick={() => ctx.navigate('ai')}>Tune →</button>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: 4, height: 22, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)' }}>
-                  <div style={{ width: '30%', background: 'var(--cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'var(--font-mono)', color: '#001' }}>Al 30</div>
-                  <div style={{ width: '35%', background: 'var(--violet)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'var(--font-mono)', color: '#fff' }}>Fe 35</div>
-                  <div style={{ width: '35%', background: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'var(--font-mono)', color: '#1a0e00' }}>Ni 35</div>
+                  <div style={{ flex: c.al, background: 'var(--cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'var(--font-mono)', color: '#001' }}>Al {c.al}</div>
+                  <div style={{ flex: c.fe, background: 'var(--violet)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'var(--font-mono)', color: '#fff' }}>Fe {c.fe}</div>
+                  <div style={{ flex: c.ni, background: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontFamily: 'var(--font-mono)', color: '#1a0e00' }}>Ni {c.ni}</div>
                 </div>
               </div>
 
@@ -170,8 +177,11 @@ function HHDashboard() {
               </div>
 
               {/* run button */}
-              <button className="hh-btn hh-btn-gold" style={{ width: '100%', padding: '12px', fontSize: 13, justifyContent: 'center' }}>
+              <button className="hh-btn hh-btn-gold" style={{ width: '100%', padding: '12px', fontSize: 13, justifyContent: 'center' }} onClick={() => ctx.navigate('ai')}>
                 ✦ Run AI prediction → see optimal alloy
+              </button>
+              <button className="hh-btn hh-btn-primary" disabled={ctx.running} style={{ width: '100%', padding: '11px', fontSize: 13, justifyContent: 'center', marginTop: 8, opacity: ctx.running ? 0.7 : 1 }} onClick={ctx.runSimulation}>
+                {ctx.running ? '◐ Solver running…' : '▶ Run multi-physics solve'}
               </button>
             </div>
           </div>
@@ -185,8 +195,8 @@ function HHDashboard() {
               </div>
               <window.HHLine
                 width={400} height={170}
-                series={[{ name: 'AlFeNi · run-78f3a', points: curveH, color: '#00E5FF', strokeWidth: 2 }]}
-                xLabel="t (s)" yLabel="c (×10³ mol/m³)" yMin={0} yMax={9} areas legend={false}
+                series={[{ name: `${window.HHfmtAlloy(c)} · ${ctx.runs[0]?.id || 'run-78f3a'}`, points: curveH, color: '#00E5FF', strokeWidth: 2 }]}
+                xLabel="t (s)" yLabel="c (×10³ mol/m³)" yMin={0} yMax={Math.max(9, surfConc + 1)} areas legend={false}
               />
             </div>
             <div className="hh-card" style={{ padding: 18 }}>
