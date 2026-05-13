@@ -52,30 +52,31 @@ function HHMarketingNav() {
   };
   return (
     <>
-    {/* Persistent prototype banner on the landing page. */}
+    {/* Prototype banner + marketing nav now sit in normal flow at the very
+        top of the landing. This auto-adjusts to the banner's actual height
+        on phones (where the message wraps to 2-3 lines), instead of relying
+        on a fixed 30 px offset that breaks at narrow widths. */}
     <div className="hh-proto-banner" role="status" aria-label="Prototype notice" style={{
-      position: 'absolute', top: 0, left: 0, right: 0, zIndex: 11,
-      padding: '7px clamp(20px, 5vw, 56px)',
+      padding: '8px clamp(16px, 5vw, 56px)',
       background: 'linear-gradient(90deg, rgba(255,181,71,0.18), rgba(255,77,157,0.14))',
       borderBottom: '1px solid rgba(255,181,71,0.30)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
       fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.08em',
-      color: '#FFD089', textAlign: 'center',
+      color: '#FFD089', textAlign: 'center', lineHeight: 1.5,
     }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)', boxShadow: '0 0 8px var(--gold)' }} />
-      <span><b style={{ color: '#FFE6BD' }}>PROTOTYPE</b> · Research demonstration only — figures and capabilities reflect a work-in-progress methodology, not a commercial product.</span>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)', boxShadow: '0 0 8px var(--gold)', flexShrink: 0 }} />
+      <span><b style={{ color: '#FFE6BD' }}>PROTOTYPE</b> · Research demonstration only · figures &amp; capabilities are work-in-progress, not a commercial product.</span>
     </div>
     <div className="hh-marketing-nav" style={{
-      position: 'absolute', top: 30, left: 0, right: 0, zIndex: 10,
-      padding: '18px clamp(20px, 5vw, 56px)',
+      padding: '14px clamp(16px, 5vw, 56px)',
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       borderBottom: '1px solid rgba(35,44,70,0.5)',
-      background: 'rgba(5,8,17,0.65)', backdropFilter: 'blur(20px)',
-      gap: 12,
+      background: 'rgba(5,8,17,0.85)', backdropFilter: 'blur(20px)',
+      gap: 12, position: 'sticky', top: 0, zIndex: 30,
     }}>
       <div style={{ cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10 }} onClick={() => ctx && ctx.navigate('landing')}>
         <HHLogo />
-        <span className="hh-chip hh-chip-gold" style={{ padding: '2px 8px', fontSize: 9.5, letterSpacing: '0.10em' }}>PROTOTYPE</span>
+        <span className="hh-chip hh-chip-gold hh-proto-chip" style={{ padding: '2px 8px', fontSize: 9.5, letterSpacing: '0.10em' }}>PROTOTYPE</span>
       </div>
       <nav className="hh-marketing-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 28, fontSize: 13, color: 'var(--ink-2)' }}>
         {items.map((it, i) => (
