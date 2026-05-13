@@ -222,6 +222,48 @@ window.HHPhysics = (function () {
     return Ns.map(N => [N / 1000, meshError(N, Nref, slope)]);
   }
 
+  // -------- plain-language interpretation of a prediction --------
+  // Translates uptake / ΔH / diffusivity / stability into 4 sentences a
+  // non-engineer can read. Each item is { tone, icon, text }.
+  function interpret(pred, T) {
+    const out = [];
+    // 1) Uptake band
+    if (pred.uptake >= 0.30) {
+      out.push({ tone: 'success', icon: '✓', text: `Excellent yield — this recipe holds ${pred.uptake.toFixed(3)} g of hydrogen per 100 g of metal. Among the top of its family.` });
+    } else if (pred.uptake >= 0.15) {
+      out.push({ tone: 'info',    icon: '●', text: `Decent yield: ${pred.uptake.toFixed(3)} g of H₂ per 100 g of metal — typical for AlFeNi at this temperature.` });
+    } else {
+      out.push({ tone: 'warn',    icon: '!', text: `Low yield (${pred.uptake.toFixed(3)} wt %). Try lowering the temperature or boosting nickel.` });
+    }
+    // 2) Hydride binding strength
+    if (pred.enthalpy > -25) {
+      out.push({ tone: 'warn',    icon: '!', text: `Weak binding (ΔH = ${pred.enthalpy.toFixed(1)} kJ/mol) — the metal will release hydrogen too easily.` });
+    } else if (pred.enthalpy < -40) {
+      out.push({ tone: 'warn',    icon: '!', text: `Very strong binding (ΔH = ${pred.enthalpy.toFixed(1)} kJ/mol) — releasing the H₂ back out will need high heat.` });
+    } else {
+      out.push({ tone: 'success', icon: '✓', text: `Balanced binding (ΔH = ${pred.enthalpy.toFixed(1)} kJ/mol) — easy to charge and discharge.` });
+    }
+    // 3) Saturation time at this T (how long to fill a 1 mm plate)
+    const D = diffusivity(T);
+    const tauMin = saturationTime(1e-3, D) / 60;
+    if (tauMin < 30) {
+      out.push({ tone: 'success', icon: '✓', text: `Fast: hydrogen fills a 1 mm plate in about ${tauMin.toFixed(0)} min at ${T} K.` });
+    } else if (tauMin < 240) {
+      out.push({ tone: 'info',    icon: '●', text: `Moderate: needs roughly ${tauMin.toFixed(0)} min to saturate a 1 mm plate at ${T} K.` });
+    } else {
+      out.push({ tone: 'warn',    icon: '!', text: `Slow at this temperature — would take ${(tauMin/60).toFixed(1)} h to saturate. Consider heating to 600 K+.` });
+    }
+    // 4) Cycling stability
+    if (pred.stability >= 0.75) {
+      out.push({ tone: 'success', icon: '✓', text: `Cycling-stable — predicted to survive 1 000+ hydriding cycles without cracking.` });
+    } else if (pred.stability >= 0.6) {
+      out.push({ tone: 'info',    icon: '●', text: `Acceptable cycling — expect gradual capacity drop after ~500 cycles.` });
+    } else {
+      out.push({ tone: 'warn',    icon: '!', text: `Risk of cracking — atomic-size mismatch is high; capacity will drop fast under repeated cycling.` });
+    }
+    return out;
+  }
+
   return {
     R, M_H, M_H2, RHO, E_MOD, NU, D0, Q, ALPHA, BETA, ELEMENTS,
     MESH_SLOPES,
@@ -231,5 +273,6 @@ window.HHPhysics = (function () {
     hydrideEnthalpy, deltaRadius, cyclingStability,
     sievertsConcentration, uptakeWtPct,
     meshError, meshSweep, meshConvergence,
+    interpret,
   };
 })();

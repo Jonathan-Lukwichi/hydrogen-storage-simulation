@@ -83,6 +83,7 @@ function HHSideNav({ active = 'simulator' }) {
   const ctx = window.useHH && window.useHH();
   const items = [
     { id: 'home', icon: '◇', label: 'Overview' },
+    { id: 'setup', icon: '⚗', label: 'Recipe Lab' },
     { id: 'simulator', icon: '⬡', label: 'Simulator' },
     { id: 'ai', icon: '✦', label: 'AI Predictor' },
     { id: 'library', icon: '◈', label: 'Materials' },
@@ -237,6 +238,7 @@ function HHTopBar({ title, subtitle, actions, hideRun }) {
     { label: ctx?.theme === 'light' ? 'Dark mode' : 'Light mode', icon: ctx?.theme === 'light' ? '☾' : '☀', shortcut: 'T', onClick: () => ctx && ctx.toggleTheme() },
     { label: 'Keyboard shortcuts', icon: '⌨', shortcut: '?', onClick: () => ctx && ctx.openShortcuts() },
     '-',
+    { label: 'Reset experiment', icon: '↺', onClick: () => ctx && ctx.resetWorkspace && ctx.resetWorkspace() },
     { label: 'Back to landing', icon: '⌂', onClick: () => ctx && ctx.navigate('landing') },
     { label: 'Sign out', icon: '⇥', onClick: () => ctx && ctx.signOut() },
   ];

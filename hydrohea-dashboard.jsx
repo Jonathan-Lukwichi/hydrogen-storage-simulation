@@ -53,19 +53,24 @@ function HHDashboard() {
 
         {/* main grid */}
         <div className="hh-scroll hh-pad" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
-          {/* KPI row — primary KPI is cyan (Simulator's screen color); rest neutral. */}
+          {/* KPI row — primary KPI is cyan (Simulator's screen color); rest neutral.
+              Every delta is computed live against the workspace baseline.   */}
           <div className="hh-grid-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 20 }}>
-            <window.HHKpi primary label="H₂ uptake" value={p.uptake.toFixed(3)} unit="wt%" delta="+8.2%" accent="cyan"
+            <window.HHKpi primary label="H₂ uptake" value={p.uptake.toFixed(3)} unit="wt%" delta={ctx.formatDelta('uptake')} accent="cyan"
               spark="M0 18 C20 16, 40 12, 60 7 S90 4, 100 4" />
-            <window.HHKpi label="τ saturation" value={(1820 - (p.diffusivity - 2.4) * 80).toFixed(0)} unit="s" accent="neutral"
+            <window.HHKpi label="τ saturation" value={(1820 - (p.diffusivity - 2.4) * 80).toFixed(0)} unit="s" delta={ctx.formatDelta('diffusivity', { invertGood: true })} accent="neutral"
               spark="M0 22 C20 18, 40 14, 60 10 S90 5, 100 4" />
             <window.HHKpi label="ΔT surface" value={(boundaryT - 298).toString()} unit="K" accent="neutral"
               spark="M0 20 L20 18 L40 12 L60 8 L80 6 L100 5" />
             <window.HHKpi label="σ_max" value={(4.5 * tNorm).toFixed(2)} unit="×10⁴ Pa" accent="neutral"
               spark="M0 22 C20 18, 40 10, 60 6 S90 4, 100 8" />
-            <window.HHKpi label="Diffusivity" value={p.diffusivity.toFixed(2)} unit="×10⁻¹⁰ m²/s" accent="neutral"
+            <window.HHKpi label="Diffusivity" value={p.diffusivity.toFixed(2)} unit="×10⁻¹⁰ m²/s" delta={ctx.formatDelta('diffusivity')} accent="neutral"
               spark="M0 16 C20 14, 40 10, 60 6 S90 3, 100 2" />
           </div>
+
+          {/* plain-language interpretation row */}
+          <SimulatorInterpretation pred={p} T={boundaryT} />
+
 
           {/* main viz + control */}
           <div className="hh-grid-main" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.85fr', gap: 16, marginBottom: 16 }}>
@@ -253,3 +258,23 @@ function HHDashboard() {
 }
 
 window.HHDashboard = HHDashboard;
+
+function SimulatorInterpretation({ pred, T }) {
+  if (!window.HHPhysics) return null;
+  const lines = window.HHPhysics.interpret(pred, T);
+  const tone = { success: 'var(--emerald)', info: 'var(--cyan)', warn: 'var(--coral)' };
+  return (
+    <div className="hh-card hh-card-elev" style={{ padding: 18, marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: 0, right: 0, width: '30%', height: '100%', background: 'radial-gradient(circle at top right, rgba(0,229,255,0.08), transparent 70%)', pointerEvents: 'none' }} />
+      <div className="hh-eyebrow" style={{ marginBottom: 10 }}><span className="dot" />WHAT THE NUMBERS MEAN</div>
+      <div className="hh-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+        {lines.map((l, i) => (
+          <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '8px 10px', background: 'var(--bg-0)', borderRadius: 8, border: `1px solid ${tone[l.tone]}26` }}>
+            <span style={{ color: tone[l.tone], fontFamily: 'var(--font-mono)', flexShrink: 0, width: 14, textAlign: 'center', marginTop: 1 }}>{l.icon}</span>
+            <span style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.5 }}>{l.text}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

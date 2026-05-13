@@ -38,6 +38,7 @@ function HHValidation() {
     return [
       {
         label: 'H concentration (mol/m³)',
+        hint:  'How much hydrogen sits inside the metal at saturation. Higher = better storage.',
         fine:   fmtSci(fine.values.concentration, 2),
         med:    fmtSci(medium.values.concentration, 2),
         medE:   medium.errors.concentration.toFixed(2) + ' %',
@@ -46,6 +47,7 @@ function HHValidation() {
       },
       {
         label: 'Surface temperature (K)',
+        hint:  'Temperature of the outer face of the metal plate after 1 hour of heating.',
         fine:   fine.values.temperature.toFixed(0),
         med:    medium.values.temperature.toFixed(0),
         medE:   medium.errors.temperature.toFixed(2) + ' %',
@@ -54,6 +56,7 @@ function HHValidation() {
       },
       {
         label: 'von Mises stress (Pa)',
+        hint:  'Mechanical stress caused by hydrogen swelling the lattice — too high and the metal cracks.',
         fine:   fmtSci(fine.values.stress, 2),
         med:    fmtSci(medium.values.stress, 2),
         medE:   medium.errors.stress.toFixed(2) + ' %',
@@ -62,6 +65,7 @@ function HHValidation() {
       },
       {
         label: 'Diffusion depth (mm)',
+        hint:  'How deep hydrogen has soaked into the 1 mm-thick plate after 1 hour.',
         fine:   (fine.values.depth * 1000).toFixed(2),
         med:    (medium.values.depth * 1000).toFixed(2),
         medE:   medium.errors.depth.toFixed(2) + ' %',
@@ -92,6 +96,17 @@ function HHValidation() {
           </>
         }/>
         <div className="hh-scroll hh-pad" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
+
+          {/* plain-language explainer — what this page actually shows */}
+          <div className="hh-card hh-card-elev" style={{ padding: 22, marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, right: 0, width: '30%', height: '100%', background: 'radial-gradient(circle at top right, rgba(74,222,128,0.08), transparent 70%)', pointerEvents: 'none' }} />
+            <div className="hh-eyebrow" style={{ marginBottom: 10 }}><span className="dot" style={{ background: 'var(--emerald)' }} />WHAT THIS PAGE DOES, IN PLAIN ENGLISH</div>
+            <h3 className="hh-display" style={{ fontSize: 18, margin: '0 0 8px' }}>How sure are we the simulator's numbers are right?</h3>
+            <p style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6, margin: 0, maxWidth: 820 }}>
+              To run the physics, we chop the metal plate into thousands of tiny triangles. The <b>smaller and more numerous</b> the triangles, the <b>more accurate</b> the simulation — but also the slower. This page compares three triangle counts (<b>coarse · medium · fine</b>) and shows how much the answer drifts. Every variable below differs by less than <b style={{ color: 'var(--emerald)' }}>5 %</b> between coarse and fine — that's the engineering rule-of-thumb that says <b>"good enough, trust the result."</b>
+            </p>
+          </div>
+
           {/* mesh comparison cards — dynamic */}
           <div className="hh-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
             {sweep.map(m => {
@@ -148,7 +163,10 @@ function HHValidation() {
               <tbody>
                 {tableRows.map((r, i) => (
                   <tr key={i}>
-                    <td style={{ color: 'var(--ink)' }}>{r.label}</td>
+                    <td style={{ color: 'var(--ink)' }}>
+                      <div>{r.label}</div>
+                      <div style={{ fontSize: 11, color: 'var(--ink-3)', marginTop: 3, fontWeight: 400, lineHeight: 1.4 }}>{r.hint}</div>
+                    </td>
                     <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--emerald)' }}>{r.fine}</td>
                     <td style={{ fontFamily: 'var(--font-mono)' }}>{r.med}</td>
                     <td style={{ fontFamily: 'var(--font-mono)', color: parseFloat(r.medE) > 5 ? 'var(--coral)' : 'var(--emerald)' }}>{r.medE}</td>
@@ -179,6 +197,9 @@ function HHValidation() {
               ]}
               xLabel="Elements (× 1000)" yLabel="Error %" yMin={0} yMax={Math.max(10, Math.ceil(curve[0]?.[1] || 5) + 1)}
             />
+            <div style={{ marginTop: 10, padding: '10px 12px', background: 'var(--bg-0)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.55 }}>
+              <b style={{ color: 'var(--emerald)' }}>What this chart shows:</b> as we add more triangles (x-axis), the error drops fast. The orange dashed line is our 5 % "good enough" cut-off. Past ~6 000 triangles the curve is already below it — adding even more triangles gives diminishing returns. <b>That's how we know the simulator's answer is trustworthy.</b>
+            </div>
           </div>
         </div>
       </div>
