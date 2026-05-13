@@ -91,7 +91,6 @@ function HHSideNav({ active = 'simulator' }) {
     { id: 'reports', icon: '▤', label: 'Reports' },
   ];
   const bottom = [
-    { id: 'docs', icon: '?', label: 'Docs' },
     { id: 'settings', icon: '⚙', label: 'Settings' },
   ];
   const navTo = (id) => { if (ctx) { ctx.navigate(id); if (ctx.sidebarOpen) ctx.setSidebarOpen(false); } };
@@ -229,7 +228,7 @@ function HHTopBar({ title, subtitle, actions, hideRun }) {
 
   const overflowItems = [
     { label: 'Export PDF', icon: '↓', onClick: () => ctx && ctx.exportItem('Run PDF') },
-    { label: 'Export CSV', icon: '↓', onClick: () => ctx && ctx.exportItem('Run CSV') },
+    { label: 'Export UI design book', icon: '⎙', onClick: () => window.HHPdf && window.HHPdf.buildDesignBook && window.HHPdf.buildDesignBook(ctx) },
     '-',
     { label: 'Share link', icon: '↗', shortcut: 'S', onClick: () => ctx && ctx.shareLink() },
     { label: 'Duplicate run', icon: '⎘', onClick: () => ctx && ctx.toast('Run duplicated as draft', 'success') },

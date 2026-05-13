@@ -33,7 +33,7 @@ function HHPipeline() {
   const steps = [
     { n: '01', t: 'Compose', d: 'Define alloy stoichiometry, lattice phase (BCC/FCC), boundary conditions and operating window.', icon: '⬢' },
     { n: '02', t: 'Simulate', d: 'Run coupled diffusion · heat · mechanics on validated COMSOL-grade solver in the cloud.', icon: '◈' },
-    { n: '03', t: 'Predict', d: 'AI surrogate models extrapolate to thousands of compositions in seconds (XGBoost · GPR · NN).', icon: '✦' },
+    { n: '03', t: 'Predict', d: 'AI surrogate models extrapolate to thousands of compositions in seconds — instant feedback as you tune.', icon: '✦' },
     { n: '04', t: 'Validate', d: 'Mesh-sensitivity sweep, literature cross-check, Arrhenius fit — confidence bands on every output.', icon: '◐' },
     { n: '05', t: 'Optimize', d: 'Pareto frontier of capacity vs. stress vs. cycling stability — export-ready engineering reports.', icon: '◊' },
   ];
@@ -124,7 +124,7 @@ function HHCapabilities() {
           <span className="hh-chip hh-chip-gold">AI</span>
           <h3 className="hh-display" style={{ fontSize: 20, margin: '12px 0 6px' }}>Composition Predictor</h3>
           <p style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.5, margin: 0 }}>
-            Gaussian Process surrogate + XGBoost ensemble trained on 12 400 HEA compositions. SHAP-explained predictions in &lt; 200 ms.
+            ML & AI surrogate ensemble trained on 12 400 HEA compositions. Plain-language attribution in &lt; 200 ms.
           </p>
           <div style={{ position: 'absolute', right: 16, bottom: 14, display: 'flex', gap: 4 }}>
             {[26, 36, 22, 30, 18, 40, 28, 34].map((h, i) => (
@@ -168,11 +168,11 @@ function HHCapabilities() {
 /* ----------- AI band ----------- */
 function HHAIBand() {
   const models = [
-    { name: 'XGBoost-HEA-v3', mae: '0.0024', rmse: '0.0031', r2: '0.962', leader: true },
-    { name: 'Gaussian Process Reg.', mae: '0.0028', rmse: '0.0036', r2: '0.954', leader: false },
-    { name: 'Neural Net (MLP)', mae: '0.0034', rmse: '0.0042', r2: '0.941', leader: false },
-    { name: 'Random Forest', mae: '0.0041', rmse: '0.0048', r2: '0.927', leader: false },
-    { name: 'CALPHAD baseline', mae: '0.0092', rmse: '0.0108', r2: '0.812', leader: false },
+    { name: 'AI Model A',          mae: '0.0024', rmse: '0.0031', r2: '0.962', leader: true },
+    { name: 'AI Model B',          mae: '0.0028', rmse: '0.0036', r2: '0.954', leader: false },
+    { name: 'AI Model C',          mae: '0.0034', rmse: '0.0042', r2: '0.941', leader: false },
+    { name: 'AI Model D',          mae: '0.0041', rmse: '0.0048', r2: '0.927', leader: false },
+    { name: 'Classical baseline',  mae: '0.0092', rmse: '0.0108', r2: '0.812', leader: false },
   ];
   return (
     <section id="ai-band" className="hh-section-pad" style={{ background: 'linear-gradient(180deg, var(--bg-0), var(--bg-1), var(--bg-0))', position: 'relative', overflow: 'hidden' }}>
@@ -259,7 +259,7 @@ function HHOutcomes() {
         <div style={{ position: 'absolute', top: 24, left: 28, fontSize: 80, lineHeight: 0.6, color: 'rgba(0,229,255,0.15)', fontFamily: 'var(--font-display)' }}>“</div>
         <div style={{ paddingLeft: 56 }}>
           <p style={{ fontSize: 19, lineHeight: 1.5, margin: 0, marginBottom: 22, color: 'var(--ink)', fontFamily: 'var(--font-display)', fontWeight: 400 }}>
-            HydroHEA collapsed what used to be a six-month CALPHAD + COMSOL loop into a single afternoon. We re-prioritised our entire alloy portfolio in two weeks.
+            HydroHEA collapsed what used to be a six-month materials-screening loop into a single afternoon. We re-prioritised our entire alloy portfolio in two weeks.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, var(--cyan), var(--gold))' }} />

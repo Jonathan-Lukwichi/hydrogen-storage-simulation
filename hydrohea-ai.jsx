@@ -15,7 +15,7 @@ function HHAIPredictor() {
   const runPredict = async () => {
     if (predicting) return;
     setPredicting(true);
-    ctx.toast('XGBoost-HEA v3 inference…', 'info');
+    ctx.toast('Running AI surrogate inference…', 'info');
     await new Promise(r => setTimeout(r, 700));
     setPredicting(false);
     const p = window.HHpredict(ctx.composition, temp);
@@ -50,7 +50,7 @@ function HHAIPredictor() {
       <window.HHSideNav active="ai" />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-0)' }}>
-        <window.HHTopBar title="AI Composition Predictor" subtitle="✦ XGBoost-HEA v3" actions={
+        <window.HHTopBar title="AI Composition Predictor" subtitle="✦ AI Model A · production" actions={
           <>
             <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }} onClick={() => ctx.openModal({ wide: true, content: <window.HHModalOptimize ctx={ctx} /> })}>Optimize (Pareto)</button>
             <button className="hh-btn hh-btn-gold" disabled={predicting} style={{ padding: '8px 16px', fontSize: 12, opacity: predicting ? 0.7 : 1 }} onClick={runPredict}>
@@ -207,11 +207,11 @@ function HHAIPredictor() {
                 <thead><tr><th>ALLOY</th><th>UPTAKE</th><th>STABILITY</th><th>MODEL</th><th>CONF.</th></tr></thead>
                 <tbody>
                   {[
-                    ['Al₂₂Fe₃₀Ni₄₈', 'Al22Fe30Ni48', '0.132 wt%', '0.812', 'XGBoost-v3', 94],
-                    ['Al₂₈Fe₃₂Ni₄₀', 'Al28Fe32Ni40', '0.124 wt%', '0.798', 'GPR', 91],
-                    ['Al₃₀Fe₃₅Ni₃₅', 'Al30Fe35Ni35', '0.114 wt%', '0.781', 'XGBoost-v3', 96],
-                    ['Al₂₆Fe₃₆Ni₃₈', 'Al26Fe36Ni38', '0.108 wt%', '0.770', 'NN-MLP', 87],
-                    ['Al₃₆Fe₂₆Ni₃₈', 'Al36Fe26Ni38', '0.101 wt%', '0.762', 'XGBoost-v3', 90],
+                    ['Al₂₂Fe₃₀Ni₄₈', 'Al22Fe30Ni48', '0.132 wt%', '0.812', 'AI Model A', 94],
+                    ['Al₂₈Fe₃₂Ni₄₀', 'Al28Fe32Ni40', '0.124 wt%', '0.798', 'AI Model B', 91],
+                    ['Al₃₀Fe₃₅Ni₃₅', 'Al30Fe35Ni35', '0.114 wt%', '0.781', 'AI Model A', 96],
+                    ['Al₂₆Fe₃₆Ni₃₈', 'Al26Fe36Ni38', '0.108 wt%', '0.770', 'AI Model C', 87],
+                    ['Al₃₆Fe₂₆Ni₃₈', 'Al36Fe26Ni38', '0.101 wt%', '0.762', 'AI Model A', 90],
                   ].map((r, i) => (
                     <tr key={i} onClick={() => ctx.applyComposition(r[1])} style={{ cursor: 'pointer' }}>
                       <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink)' }}>{r[0]}</td>

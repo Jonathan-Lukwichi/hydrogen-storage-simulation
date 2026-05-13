@@ -1,7 +1,7 @@
 // =============================================================
 // hydrohea-app.jsx — global state, toasts, modals, missing screens.
 // Provides window.HH.Provider, window.useHH(), and screens
-// HHOverview, HHSignIn, HHReports, HHSettings, HHDocs.
+// HHOverview, HHSignIn, HHReports, HHSettings, HHRecipeLab.
 // =============================================================
 
 const HHContext = React.createContext(null);
@@ -346,7 +346,7 @@ function HHProvider({ children }) {
       }
       // Two-key combos (g <letter>) handled first so they don't conflict with single keys.
       if (gMode) {
-        const map = { o: 'overview', s: 'simulator', a: 'ai', l: 'library', v: 'validation', d: 'docs', r: 'reports', h: 'landing', p: 'settings' };
+        const map = { o: 'overview', s: 'simulator', a: 'ai', l: 'library', v: 'validation', r: 'reports', h: 'landing', p: 'settings', c: 'setup' };
         const dest = map[e.key];
         if (dest) { e.preventDefault(); navigate(dest); }
         gMode = false;
@@ -412,7 +412,7 @@ window.HHProvider = HHProvider;
 /* ---------------- toast host ---------------- */
 function HHToastHost({ toasts }) {
   return (
-    <div style={{ position: 'fixed', top: 70, right: 24, zIndex: 1000, display: 'flex', flexDirection: 'column', gap: 8, pointerEvents: 'none' }}>
+    <div className="hh-toast-host" style={{ position: 'fixed', top: 70, right: 24, zIndex: 1000, display: 'flex', flexDirection: 'column', gap: 8, pointerEvents: 'none' }}>
       {toasts.map(t => (
         <div key={t.id} style={{
           padding: '11px 16px',
@@ -496,7 +496,7 @@ function HHModalShortcuts() {
     { title: 'Navigate', items: [
       ['g o', 'Overview'], ['g s', 'Simulator'], ['g a', 'AI Predictor'],
       ['g l', 'Materials Library'], ['g v', 'Validation Studio'],
-      ['g r', 'Reports'], ['g d', 'Docs'], ['g p', 'Settings'], ['g h', 'Landing'],
+      ['g r', 'Reports'], ['g p', 'Settings'], ['g c', 'Recipe Lab'], ['g h', 'Landing'],
     ]},
     { title: 'Run & actions', items: [
       ['r', 'Run simulation'], ['Shift S', 'Copy share link'],
@@ -603,21 +603,6 @@ function HHModalSignIn({ ctx }) {
       </button>
       <div style={{ marginTop: 16, fontSize: 11.5, color: 'var(--ink-3)', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>
         Or continue with <a onClick={() => ctx.signIn()} style={{ color: 'var(--cyan)', cursor: 'pointer' }}>SSO · GOOGLE</a>
-      </div>
-    </div>
-  );
-}
-
-function HHModalVideo({ ctx }) {
-  return (
-    <div style={{ padding: 0 }}>
-      <div style={{ aspectRatio: '16/9', background: 'linear-gradient(135deg, #050811, #0F1526)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', borderRadius: '18px 18px 0 0', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(0,229,255,0.15), transparent 60%)' }} />
-        <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(180deg, var(--cyan), var(--cyan-dim))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: '#001', boxShadow: '0 0 40px rgba(0,229,255,0.5)', cursor: 'pointer' }}>▶</div>
-      </div>
-      <div style={{ padding: 24 }}>
-        <h3 className="hh-display" style={{ fontSize: 18, margin: '0 0 6px' }}>HydroHEA in 90 seconds</h3>
-        <p style={{ fontSize: 12.5, color: 'var(--ink-3)', margin: 0 }}>How AI-driven composition search + cloud multi-physics replace 6 months of COMSOL trial-and-error.</p>
       </div>
     </div>
   );
@@ -1081,51 +1066,6 @@ function HHSettings() {
 }
 window.HHSettings = HHSettings;
 
-function HHDocs() {
-  const ctx = window.useHH();
-  const groups = [
-    { t: 'Getting started', items: ['Quickstart · run your first simulation', 'Composition designer concepts', 'Understanding mesh sensitivity', 'AI predictor — read the SHAP plot'] },
-    { t: 'Physics modules', items: ['Transport of diluted species', 'Heat transfer in solids', 'Solid mechanics · von Mises', 'Arrhenius temperature dependence'] },
-    { t: 'For everyone', items: ['What is a high-entropy alloy?', 'Why hydrogen storage matters', 'Reading your PDF report', 'Glossary of metallurgy terms'] },
-  ];
-  return (
-    <div className="hh-art" style={{ display: 'flex', height: '100%' }}>
-      <window.HHSideNav active="docs" />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-0)' }}>
-        <window.HHTopBar title="Docs & Knowledge" subtitle="HydroHEA v3.2" actions={
-          <button className="hh-btn hh-btn-primary" style={{ padding: '8px 16px', fontSize: 12 }} onClick={() => ctx.openModal({ wide: true, content: <HHModalDemo ctx={ctx} /> })}>Talk to a scientist</button>
-        }/>
-        <div className="hh-scroll" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
-          <div className="hh-card hh-card-elev" style={{ padding: 22, marginBottom: 16 }}>
-            <input placeholder="🔍  Search docs (e.g. Arrhenius, mesh, XGBoost)…" style={{ width: '100%', padding: '12px 16px', background: 'var(--bg-0)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--ink)', fontSize: 14, fontFamily: 'var(--font-body)', outline: 'none' }} />
-          </div>
-          <div className="hh-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-            {groups.map(g => (
-              <div key={g.t} className="hh-card" style={{ padding: 22 }}>
-                <div className="hh-eyebrow" style={{ marginBottom: 12 }}><span className="dot" />{g.t.toUpperCase()}</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {g.items.map(it => (
-                    <a key={it} onClick={() => ctx.toast(`Opening: ${it}`, 'info')} style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '11px 14px', borderRadius: 8, background: 'var(--bg-0)',
-                      border: '1px solid var(--border)', color: 'var(--ink-2)',
-                      fontSize: 13, cursor: 'pointer', textDecoration: 'none',
-                    }}>
-                      <span>{it}</span>
-                      <span style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>→</span>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-window.HHDocs = HHDocs;
-
 /* ============================================================
    HHRecipeLab — Step-1 configuration screen
    ------------------------------------------------------------
@@ -1339,7 +1279,6 @@ window.HHRecipeLab = HHRecipeLab;
 /* ---------- expose modal builders ---------- */
 window.HHModalDemo = HHModalDemo;
 window.HHModalSignIn = HHModalSignIn;
-window.HHModalVideo = HHModalVideo;
 window.HHModalOptimize = HHModalOptimize;
 window.HHModalNewAlloy = HHModalNewAlloy;
 window.HHModalImport = HHModalImport;

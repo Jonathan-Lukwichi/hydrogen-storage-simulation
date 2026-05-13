@@ -82,6 +82,9 @@
 <!-- jsPDF for real client-side PDF report generation -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
 
+<!-- html2canvas — used by the "Export UI design book" action -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+
 <!-- Real physics module (analytic solutions: Fick erfc, Arrhenius, etc.) -->
 <script src="hydrohea-physics.js"></script>
 
@@ -117,7 +120,6 @@ const ROUTES = [
   { id: 'library',    label: 'Library',    component: 'HHLibrary' },
   { id: 'validation', label: 'Validation', component: 'HHValidation' },
   { id: 'reports',    label: 'Reports',    component: 'HHReports' },
-  { id: 'docs',       label: 'Docs',       component: 'HHDocs' },
   { id: 'settings',   label: 'Settings',   component: 'HHSettings' },
 ];
 
