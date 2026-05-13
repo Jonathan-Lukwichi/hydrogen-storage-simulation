@@ -20,21 +20,28 @@ function HHDashboard() {
   const f = fields[activeField];
   const data = window.genField({ type: f.type, t: tNorm, rows: 50, cols: 12 });
 
-  // synthetic curves
+  // Real physics-derived time curves at a probe depth of x = 0.2 mm.
+  // c(x,t) = c_s · erfc(x/(2√(Dt))) — see HHPhysics.concentration
+  const probeX = 0.2e-3; // m
+  const surfConcSI = surfConc * 1e3; // ×10³ mol/m³ → mol/m³
+  const D = window.HHPhysics ? window.HHPhysics.diffusivity(boundaryT) : 1e-11;
+  const alpha = window.HHPhysics ? window.HHPhysics.ALPHA : 1e-5;
+
   const curveH = Array.from({length: 60}, (_, i) => {
     const x = i / 59 * 3600;
-    const y = surfConc * (1 - Math.exp(-x / 800));
-    return [x, y];
+    const c = window.HHPhysics ? window.HHPhysics.concentration(probeX, x, surfConcSI, D) : 0;
+    return [x, c / 1e3]; // back to ×10³ mol/m³ for chart units
   });
   const curveT = Array.from({length: 60}, (_, i) => {
     const x = i / 59 * 3600;
-    const y = 298 + (boundaryT - 298) * (1 - Math.exp(-x / 1100));
-    return [x, y];
+    const T = window.HHPhysics ? window.HHPhysics.temperature(probeX, x, boundaryT, 298, alpha) : 298;
+    return [x, T];
   });
   const curveStress = Array.from({length: 60}, (_, i) => {
     const x = i / 59 * 3600;
-    const y = 4.5 * (1 - Math.exp(-x / 950)) * 0.95;
-    return [x, y];
+    const c = window.HHPhysics ? window.HHPhysics.concentration(probeX, x, surfConcSI, D) : 0;
+    const sigma = window.HHPhysics ? window.HHPhysics.vonMisesStress(c) : 0;
+    return [x, sigma / 1e4]; // Pa → ×10⁴ Pa for chart units
   });
 
   return (
@@ -56,7 +63,7 @@ function HHDashboard() {
               spark="M0 20 L20 18 L40 12 L60 8 L80 6 L100 5" />
             <window.HHKpi label="σ_max" value={(4.5 * tNorm).toFixed(2)} unit="×10⁴ Pa" accent="neutral"
               spark="M0 22 C20 18, 40 10, 60 6 S90 4, 100 8" />
-            <window.HHKpi label="Diffusivity" value={p.diffusivity.toFixed(2)} unit="×10⁻⁷ m²/s" accent="neutral"
+            <window.HHKpi label="Diffusivity" value={p.diffusivity.toFixed(2)} unit="×10⁻¹⁰ m²/s" accent="neutral"
               spark="M0 16 C20 14, 40 10, 60 6 S90 3, 100 2" />
           </div>
 

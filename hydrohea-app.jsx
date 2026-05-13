@@ -10,12 +10,38 @@ window.useHH = () => React.useContext(HHContext);
 
 /* ---------------- shared helpers ---------------- */
 function fmtAlloy(c) { return `Al${c.al}Fe${c.fe}Ni${c.ni}`; }
+
+// Predict via the trained surrogate (ridge-regression on physics-generated
+// data — see hydrohea-surrogate.js). Diffusivity is exponential in T (pure
+// Arrhenius, composition-independent in our model) so we use the exact
+// physics for it rather than a degree-2 polynomial approximation.
 function predict(c, T) {
+  if (window.HHSurrogate && window.HHPhysics) {
+    const s = window.HHSurrogate.predict(c, T);
+    return roundPred({
+      uptake: s.uptake,
+      enthalpy: s.enthalpy,
+      diffusivity: window.HHPhysics.diffusivity(T) * 1e10, // ×10⁻¹⁰ m²/s
+      stability: s.stability,
+    });
+  }
+  if (window.HHPhysics) {
+    const comp = { Al: c.al, Fe: c.fe, Ni: c.ni };
+    return roundPred({
+      uptake: window.HHPhysics.uptakeWtPct(comp, T),
+      enthalpy: window.HHPhysics.hydrideEnthalpy(comp, T),
+      diffusivity: window.HHPhysics.diffusivity(T) * 1e10,
+      stability: window.HHPhysics.cyclingStability(comp),
+    });
+  }
+  return { uptake: 0.114, enthalpy: -32, diffusivity: 2.4, stability: 0.78 };
+}
+function roundPred(p) {
   return {
-    uptake: +(0.10 + 0.0015 * c.ni + 0.0008 * (c.al - 30) - 0.0002 * Math.abs(T - 350)).toFixed(3),
-    enthalpy: -(25 + 0.3 * c.ni + 0.15 * c.al).toFixed(1),
-    diffusivity: +(1.8 + 0.02 * c.fe + 0.005 * (T - 298)).toFixed(2),
-    stability: +(0.78 + 0.002 * c.ni - 0.001 * (c.al - 30)).toFixed(3),
+    uptake: +p.uptake.toFixed(3),
+    enthalpy: +p.enthalpy.toFixed(1),
+    diffusivity: +p.diffusivity.toFixed(2),
+    stability: +p.stability.toFixed(3),
   };
 }
 window.HHpredict = predict;
@@ -141,10 +167,35 @@ function HHProvider({ children }) {
     setRunning(false);
   }, [running, toast]);
 
-  const exportItem = React.useCallback((kind = 'PDF report') => {
+  const exportItem = React.useCallback((kind = 'PDF report', payload = null) => {
+    if (!window.HHPdf || !window.HHPdf.available()) {
+      toast(`PDF engine still loading — try again in a moment`, 'error');
+      return;
+    }
     toast(`Generating ${kind}…`, 'info');
-    setTimeout(() => toast(`${kind} downloaded · ${(Math.random()*4+1).toFixed(1)} MB`, 'success'), 800);
-  }, [toast]);
+    // Build a snapshot of the live context so the PDF reflects current state.
+    const snapshot = {
+      composition, opTemp, surfConc, runs, alloys, user,
+    };
+    let ok = false;
+    try {
+      const k = kind.toLowerCase();
+      if (payload && payload.alloy) {
+        ok = window.HHPdf.buildAlloyDatasheet(payload.alloy);
+      } else if (k.includes('validation') || k.includes('audit')) {
+        ok = window.HHPdf.buildValidationAudit(snapshot);
+      } else if (k.includes('run') || k.includes('multi-physics') || k === 'pdf report') {
+        ok = window.HHPdf.buildRunReport(snapshot, { includeRecent: true });
+      } else {
+        ok = window.HHPdf.buildGenericReport(kind, snapshot);
+      }
+    } catch (e) {
+      console.error(e);
+      ok = false;
+    }
+    if (ok) toast(`${kind} downloaded`, 'success');
+    else toast(`Could not generate ${kind}`, 'error');
+  }, [toast, composition, opTemp, surfConc, runs, alloys, user]);
 
   const shareLink = React.useCallback(() => {
     const url = `https://hydrohea.ai/run/${runs[0]?.id || '78f3a'}`;
