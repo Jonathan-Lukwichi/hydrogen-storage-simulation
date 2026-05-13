@@ -317,6 +317,9 @@ function HHProvider({ children }) {
     setRuns(seedRuns);
     setAlloys(SEED_ALLOYS);
     toast('Experiment reset — back to a clean slate', 'success');
+    // Visible feedback: jump back to Recipe Lab so the user sees the change.
+    window.location.hash = 'setup';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [seedRuns, toast]);
 
   // ----- Global keyboard shortcuts -----
@@ -976,9 +979,8 @@ function HHReports() {
                     <td style={{ fontSize: 12 }}>{r.author}</td>
                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5 }}>{r.date}</td>
                     <td style={{ fontFamily: 'var(--font-mono)' }}>{r.pages}</td>
-                    <td style={{ display: 'flex', gap: 6 }}>
-                      <button className="hh-btn hh-btn-ghost" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => ctx.exportItem(`Report ${r.id} (PDF)`)}>PDF</button>
-                      <button className="hh-btn hh-btn-ghost" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => ctx.exportItem(`Report ${r.id} (DOCX)`)}>DOCX</button>
+                    <td>
+                      <button className="hh-btn hh-btn-ghost" style={{ padding: '4px 12px', fontSize: 11 }} onClick={() => ctx.exportItem(`Report ${r.id} (PDF)`)}>Open PDF →</button>
                     </td>
                   </tr>
                 ))}
