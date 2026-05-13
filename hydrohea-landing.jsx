@@ -104,7 +104,7 @@ function HHCapabilities() {
             <span className="hh-chip">Solid mechanics</span>
           </div>
           {/* mini 3d-ish viz */}
-          <svg viewBox="0 0 200 140" style={{ position: 'absolute', right: 20, top: 56, width: 220, opacity: 0.85 }}>
+          <svg className="hh-card-deco" viewBox="0 0 200 140" style={{ position: 'absolute', right: 20, top: 56, width: 220, opacity: 0.85 }}>
             <defs>
               <linearGradient id="capg1" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0%" stopColor="#00E5FF" stopOpacity="0.7" />
@@ -126,7 +126,7 @@ function HHCapabilities() {
           <p style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.5, margin: 0 }}>
             ML & AI surrogate ensemble trained on 12 400 HEA compositions. Plain-language attribution in &lt; 200 ms.
           </p>
-          <div style={{ position: 'absolute', right: 16, bottom: 14, display: 'flex', gap: 4 }}>
+          <div className="hh-card-deco" style={{ position: 'absolute', right: 16, bottom: 14, display: 'flex', gap: 4 }}>
             {[26, 36, 22, 30, 18, 40, 28, 34].map((h, i) => (
               <div key={i} style={{ width: 6, height: h, background: i === 5 ? 'var(--gold)' : 'rgba(255,181,71,0.5)', borderRadius: 1 }} />
             ))}

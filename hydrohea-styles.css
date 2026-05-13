@@ -485,6 +485,12 @@ body {
   .hh-marketing-nav { padding: 16px 24px !important; }
 }
 
+/* Decorative graphics inside bento cards collide with text once the card
+   becomes full-width on phones. They're purely visual — safe to drop. */
+@media (max-width: 820px) {
+  .hh-card-deco { display: none !important; }
+}
+
 /* ---- Phones landscape / small tablets portrait (≤ 700 px) ---- */
 @media (max-width: 700px) {
   /* Hero: smaller headline, single-column stat strip wraps */
