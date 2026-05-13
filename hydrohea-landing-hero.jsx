@@ -5,7 +5,7 @@
 function HHLandingHero() {
   const ctx = window.useHH && window.useHH();
   return (
-    <section id="hero" className="hh-radial-cyan hh-noise hh-section-pad" style={{ position: 'relative', overflow: 'hidden' }}>
+    <section id="hero" className="hh-radial-cyan hh-noise hh-section-pad" style={{ position: 'relative', overflow: 'hidden', paddingTop: 'clamp(120px, 12vw, 160px)' }}>
       {/* grid bg */}
       <div className="hh-grid-bg" style={{ position: 'absolute', inset: 0, opacity: 0.5, maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 75%)' }} />
 
