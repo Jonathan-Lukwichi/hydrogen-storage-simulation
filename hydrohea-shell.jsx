@@ -28,7 +28,7 @@ function HHLogo({ size = 28, label = true }) {
         <line x1="20" y1="20" x2="28" y2="26" stroke="#00E5FF" strokeWidth="0.7" opacity="0.5" />
       </svg>
       {label && (
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>
+        <div className="hh-sidenav-logo-text" style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>
           Hydro<span style={{ color: 'var(--cyan)' }}>HEA</span>
         </div>
       )}
@@ -91,39 +91,59 @@ function HHSideNav({ active = 'simulator' }) {
     { id: 'docs', icon: '?', label: 'Docs' },
     { id: 'settings', icon: '⚙', label: 'Settings' },
   ];
-  const navTo = (id) => { if (ctx) ctx.navigate(id); };
+  const navTo = (id) => { if (ctx) { ctx.navigate(id); if (ctx.sidebarOpen) ctx.setSidebarOpen(false); } };
   const lastRun = ctx?.runs?.[0];
   const user = ctx?.user || { name: 'C. Lukwichi', org: 'ESIS · Metallurgy', initials: 'CL' };
+  const collapsed = ctx?.sidebarCollapsed;
+  const open = ctx?.sidebarOpen;
+
+  const itemStyle = (isActive) => ({
+    display: 'flex', alignItems: 'center', gap: 12,
+    padding: '9px 12px', borderRadius: 8,
+    color: isActive ? 'var(--ink)' : 'var(--ink-3)',
+    background: isActive ? 'rgba(0,229,255,0.08)' : 'transparent',
+    border: isActive ? '1px solid rgba(0,229,255,0.20)' : '1px solid transparent',
+    cursor: 'pointer', fontSize: 13, marginBottom: 2,
+    position: 'relative',
+  });
+
   return (
-    <aside style={{
+    <aside className={`hh-sidenav ${collapsed ? 'is-collapsed' : ''} ${open ? 'is-open' : ''}`} style={{
       width: 240, background: 'var(--bg-1)', borderRight: '1px solid var(--border-soft)',
-      display: 'flex', flexDirection: 'column', padding: '24px 0', flexShrink: 0,
+      display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0,
     }}>
-      <div style={{ padding: '0 24px 28px', cursor: 'pointer' }} onClick={() => navTo('landing')}>
-        <HHLogo />
+      <div style={{ padding: '0 16px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }} onClick={() => navTo('landing')} title="Back to landing">
+          <HHLogo label={!collapsed} />
+        </div>
+        <button
+          onClick={() => ctx && ctx.setSidebarCollapsed(!collapsed)}
+          title={collapsed ? 'Expand sidebar (])' : 'Collapse sidebar (])'}
+          aria-label="Toggle sidebar"
+          className="hh-sidenav-toggle"
+          style={{
+            width: 24, height: 24, borderRadius: 6,
+            background: 'transparent', border: '1px solid var(--border)',
+            color: 'var(--ink-3)', cursor: 'pointer', fontSize: 11,
+            display: collapsed ? 'none' : 'inline-flex',
+            alignItems: 'center', justifyContent: 'center',
+          }}>‹</button>
       </div>
       <div style={{ padding: '0 12px' }}>
-        <div style={{ padding: '0 12px 10px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.16em', color: 'var(--ink-4)' }}>WORKSPACE</div>
+        <div className="hh-sidenav-section-label" style={{ padding: '0 12px 10px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.16em', color: 'var(--ink-4)' }}>WORKSPACE</div>
         {items.map(it => (
-          <div key={it.id} onClick={() => navTo(it.id)} style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            padding: '9px 12px', borderRadius: 8,
-            color: it.id === active ? 'var(--ink)' : 'var(--ink-3)',
-            background: it.id === active ? 'rgba(0,229,255,0.08)' : 'transparent',
-            border: it.id === active ? '1px solid rgba(0,229,255,0.20)' : '1px solid transparent',
-            cursor: 'pointer', fontSize: 13, marginBottom: 2,
-            position: 'relative',
-          }}
-          onMouseEnter={e => { if (it.id !== active) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
-          onMouseLeave={e => { if (it.id !== active) e.currentTarget.style.background = 'transparent'; }}>
-            <span style={{ color: it.id === active ? 'var(--cyan)' : 'var(--ink-4)', fontSize: 14, width: 14, display: 'inline-block', textAlign: 'center' }}>{it.icon}</span>
-            {it.label}
-            {it.id === active && <span style={{ position: 'absolute', right: 10, width: 4, height: 4, borderRadius: '50%', background: 'var(--cyan)', boxShadow: '0 0 8px var(--cyan-glow)' }} />}
+          <div key={it.id} className="hh-sidenav-item" onClick={() => navTo(it.id)} style={itemStyle(it.id === active)}
+            title={it.label}
+            onMouseEnter={e => { if (it.id !== active) e.currentTarget.style.background = 'var(--hover-tint)'; }}
+            onMouseLeave={e => { if (it.id !== active) e.currentTarget.style.background = 'transparent'; }}>
+            <span style={{ color: it.id === active ? 'var(--cyan)' : 'var(--ink-4)', fontSize: 14, width: 14, display: 'inline-block', textAlign: 'center', flexShrink: 0 }}>{it.icon}</span>
+            <span className="hh-sidenav-label">{it.label}</span>
+            {it.id === active && !collapsed && <span style={{ position: 'absolute', right: 10, width: 4, height: 4, borderRadius: '50%', background: 'var(--cyan)', boxShadow: '0 0 8px var(--cyan-glow)' }} />}
           </div>
         ))}
       </div>
-      <div style={{ marginTop: 28, padding: '0 12px' }}>
-        <div style={{ padding: '0 12px 10px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.16em', color: 'var(--ink-4)' }}>ACTIVE PROJECT</div>
+      <div className="hh-sidenav-project" style={{ marginTop: 24, padding: '0 12px' }}>
+        <div className="hh-sidenav-section-label" style={{ padding: '0 12px 10px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.16em', color: 'var(--ink-4)' }}>ACTIVE PROJECT</div>
         <div style={{ padding: '12px 14px', borderRadius: 10, background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <div style={{ fontSize: 12.5, fontWeight: 600 }}>{ctx ? window.HHfmtAlloy(ctx.composition) : 'AlFeNi'} · v3.2</div>
@@ -134,19 +154,20 @@ function HHSideNav({ active = 'simulator' }) {
       </div>
       <div style={{ marginTop: 'auto', padding: '0 12px' }}>
         {bottom.map(it => (
-          <div key={it.id} onClick={() => navTo(it.id)} style={{
+          <div key={it.id} className="hh-sidenav-item" onClick={() => navTo(it.id)} title={it.label} style={{
             display: 'flex', alignItems: 'center', gap: 12,
             padding: '8px 12px', borderRadius: 8,
             color: it.id === active ? 'var(--ink)' : 'var(--ink-3)',
             background: it.id === active ? 'rgba(0,229,255,0.06)' : 'transparent',
             fontSize: 13, cursor: 'pointer',
           }}>
-            <span style={{ color: it.id === active ? 'var(--cyan)' : 'var(--ink-4)', width: 14, textAlign: 'center' }}>{it.icon}</span>{it.label}
+            <span style={{ color: it.id === active ? 'var(--cyan)' : 'var(--ink-4)', width: 14, textAlign: 'center', flexShrink: 0 }}>{it.icon}</span>
+            <span className="hh-sidenav-label">{it.label}</span>
           </div>
         ))}
-        <div onClick={() => navTo('settings')} style={{ padding: '14px 12px', marginTop: 8, borderTop: '1px solid var(--border-soft)', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-          <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, var(--cyan), var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#001' }}>{user.initials}</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
+        <div onClick={() => navTo('settings')} className="hh-sidenav-item" style={{ padding: '14px 12px', marginTop: 8, borderTop: '1px solid var(--border-soft)', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+          <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, var(--cyan), var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#001', flexShrink: 0 }}>{user.initials}</div>
+          <div className="hh-sidenav-user-meta" style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 12, fontWeight: 500 }}>{user.name}</div>
             <div style={{ fontSize: 10.5, color: 'var(--ink-4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.org}</div>
           </div>
@@ -156,50 +177,119 @@ function HHSideNav({ active = 'simulator' }) {
   );
 }
 
-/* ---------------- APP TOP BAR ---------------- */
-function HHTopBar({ title, subtitle, actions }) {
-  const ctx = window.useHH && window.useHH();
-  const lastRun = ctx?.runs?.[0];
+/* ---------------- OVERFLOW MENU ---------------- */
+function HHOverflowMenu({ items }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return;
+    const onDown = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [open]);
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '18px 32px', borderBottom: '1px solid var(--border-soft)',
-      background: 'var(--bg-1)', flexShrink: 0,
-    }}>
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ fontSize: 12, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)' }}>HydroHEA / Projects /</div>
-          <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: '-0.01em' }}>{title}</div>
-          <span className="hh-chip hh-chip-cyan">{subtitle || (ctx ? window.HHfmtAlloy(ctx.composition) + ' · BCC' : 'AlFeNi · BCC')}</span>
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button className="hh-overflow-btn" onClick={() => setOpen(o => !o)} aria-haspopup="menu" aria-expanded={open} title="More actions">⋯</button>
+      {open && (
+        <div className="hh-overflow-menu" role="menu">
+          {items.map((it, i) => it === '-'
+            ? <div key={'sep'+i} className="hh-overflow-sep" />
+            : (
+              <button key={it.label} role="menuitem" onClick={() => { setOpen(false); it.onClick && it.onClick(); }}>
+                {it.icon && <span style={{ width: 16, color: 'var(--ink-3)' }}>{it.icon}</span>}
+                {it.label}
+                {it.shortcut && <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)' }}>{it.shortcut}</span>}
+              </button>
+            )
+          )}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4, fontFamily: 'var(--font-mono)' }}>
-          Last solver run · {lastRun?.id || 'run-78f3a'} · Δerror &lt; 0.4% · mesh: fine (14 280 elems)
-        </div>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        {actions || (
-          <>
-            <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }} onClick={() => ctx && ctx.exportItem('Run PDF')}>Export</button>
-            <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }} onClick={() => ctx && ctx.shareLink()}>Share</button>
-            <button className="hh-btn hh-btn-primary" disabled={ctx?.running} style={{ padding: '8px 16px', fontSize: 12, opacity: ctx?.running ? 0.7 : 1 }} onClick={() => ctx && ctx.runSimulation()}>
-              {ctx?.running ? '◐ Running…' : '▶ Run simulation'}
-            </button>
-          </>
-        )}
-      </div>
+      )}
     </div>
   );
 }
 
-/* ---------------- KPI CARD ---------------- */
-function HHKpi({ label, value, unit, delta, accent = 'cyan', spark }) {
-  const accentColor = { cyan: 'var(--cyan)', gold: 'var(--gold)', emerald: 'var(--emerald)', coral: 'var(--coral)', violet: 'var(--violet)' }[accent];
+/* ---------------- APP TOP BAR (slim) ---------------- */
+function HHTopBar({ title, subtitle, actions, hideRun }) {
+  const ctx = window.useHH && window.useHH();
+  const lastRun = ctx?.runs?.[0];
+  const metaTooltip = `Last run ${lastRun?.id || 'run-78f3a'} · Δerror < 0.4% · mesh: fine (14 280 elems)`;
+
+  const overflowItems = [
+    { label: 'Export PDF', icon: '↓', onClick: () => ctx && ctx.exportItem('Run PDF') },
+    { label: 'Export CSV', icon: '↓', onClick: () => ctx && ctx.exportItem('Run CSV') },
+    '-',
+    { label: 'Share link', icon: '↗', shortcut: 'S', onClick: () => ctx && ctx.shareLink() },
+    { label: 'Duplicate run', icon: '⎘', onClick: () => ctx && ctx.toast('Run duplicated as draft', 'success') },
+    '-',
+    { label: 'Toggle sidebar', icon: ctx?.sidebarCollapsed ? '›' : '‹', shortcut: ']', onClick: () => ctx && ctx.setSidebarCollapsed(!ctx.sidebarCollapsed) },
+    { label: ctx?.theme === 'light' ? 'Dark mode' : 'Light mode', icon: ctx?.theme === 'light' ? '☾' : '☀', shortcut: 'T', onClick: () => ctx && ctx.toggleTheme() },
+    { label: 'Keyboard shortcuts', icon: '⌨', shortcut: '?', onClick: () => ctx && ctx.openShortcuts() },
+  ];
+
   return (
-    <div className="hh-card hh-card-glow" style={{ padding: 18, position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: accentColor, opacity: 0.7 }} />
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', color: 'var(--ink-3)', textTransform: 'uppercase', marginBottom: 10 }}>{label}</div>
+    <div className="hh-topbar" style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '14px 28px', borderBottom: '1px solid var(--border-soft)',
+      background: 'var(--bg-1)', flexShrink: 0, gap: 16,
+    }}>
+      <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button
+          onClick={() => ctx && ctx.setSidebarOpen(!ctx.sidebarOpen)}
+          aria-label="Open menu"
+          className="hh-mobile-nav-inline"
+          style={{
+            display: 'none',
+            width: 32, height: 32, borderRadius: 8,
+            background: 'transparent', border: '1px solid var(--border)',
+            color: 'var(--ink-2)', cursor: 'pointer', fontSize: 14,
+          }}>☰</button>
+        <div title={metaTooltip} style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          <div className="hh-topbar-meta" style={{ fontSize: 12, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
+            HydroHEA /
+          </div>
+          <h1 style={{ margin: 0, fontSize: 17, fontWeight: 600, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</h1>
+          <span className="hh-chip hh-chip-cyan" style={{ whiteSpace: 'nowrap' }}>{subtitle || (ctx ? window.HHfmtAlloy(ctx.composition) + ' · BCC' : 'AlFeNi · BCC')}</span>
+          {ctx?.running && (
+            <span className="hh-chip hh-chip-gold" style={{ whiteSpace: 'nowrap' }}>
+              <span className="hh-spin" style={{ marginRight: 4 }}>◐</span>RUNNING
+            </span>
+          )}
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        {actions}
+        {!actions && !hideRun && (
+          <button className="hh-btn hh-btn-primary" disabled={ctx?.running} style={{ padding: '8px 16px', fontSize: 12, opacity: ctx?.running ? 0.7 : 1 }} onClick={() => ctx && ctx.runSimulation()}>
+            {ctx?.running ? '◐ Running…' : '▶ Run'}
+          </button>
+        )}
+        <HHOverflowMenu items={overflowItems} />
+      </div>
+    </div>
+  );
+}
+window.HHOverflowMenu = HHOverflowMenu;
+
+/* ---------------- KPI CARD ----------------
+   accent = 'cyan' | 'gold' | 'emerald' | 'coral' | 'violet' | 'neutral'
+   The "primary" prop draws the colored side-bar; secondary KPIs are neutral
+   to give one screen a single accent color (less rainbow noise).
+*/
+function HHKpi({ label, value, unit, delta, accent = 'cyan', spark, primary = false }) {
+  const colorMap = { cyan: 'var(--cyan)', gold: 'var(--gold)', emerald: 'var(--emerald)', coral: 'var(--coral)', violet: 'var(--violet)', neutral: 'var(--ink-3)' };
+  const isNeutral = accent === 'neutral';
+  const accentColor = colorMap[accent] || colorMap.cyan;
+  const valueColor = isNeutral ? 'var(--ink)' : 'var(--ink)';
+  const sparkStroke = isNeutral ? 'var(--ink-4)' : accentColor;
+
+  return (
+    <div className={`hh-card ${primary ? 'hh-card-elev hh-card-glow' : ''}`} style={{ padding: 16, position: 'relative', overflow: 'hidden' }}>
+      {primary && !isNeutral && (
+        <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: accentColor, opacity: 0.75 }} />
+      )}
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', color: 'var(--ink-3)', textTransform: 'uppercase', marginBottom: 8 }}>{label}</div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-        <span className="hh-num" style={{ fontSize: 30 }}>{value}</span>
+        <span className="hh-num" style={{ fontSize: primary ? 30 : 24, color: valueColor }}>{value}</span>
         <span style={{ fontSize: 12, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)' }}>{unit}</span>
       </div>
       {delta && (
@@ -208,9 +298,9 @@ function HHKpi({ label, value, unit, delta, accent = 'cyan', spark }) {
         </div>
       )}
       {spark && (
-        <svg viewBox="0 0 100 24" style={{ width: '100%', height: 24, marginTop: 10 }} preserveAspectRatio="none">
-          <path d={spark} stroke={accentColor} strokeWidth="1.5" fill="none" />
-          <path d={spark + ' L100 24 L0 24 Z'} fill={accentColor} opacity="0.10" />
+        <svg viewBox="0 0 100 24" style={{ width: '100%', height: 34, marginTop: 10, display: 'block' }} preserveAspectRatio="none">
+          <path d={spark} stroke={sparkStroke} strokeWidth="1.5" fill="none" vectorEffect="non-scaling-stroke" />
+          <path d={spark + ' L100 24 L0 24 Z'} fill={sparkStroke} opacity={isNeutral ? 0.05 : 0.10} />
         </svg>
       )}
     </div>

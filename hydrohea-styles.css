@@ -51,6 +51,48 @@
   --shadow-md: 0 4px 14px rgba(0,0,0,0.35);
   --shadow-glow: 0 0 24px rgba(0,229,255,0.25);
   --shadow-glow-gold: 0 0 24px rgba(255,181,71,0.22);
+
+  /* derived overlays — used by light theme override below */
+  --hover-tint: rgba(255,255,255,0.03);
+  --hover-tint-strong: rgba(255,255,255,0.06);
+}
+
+/* ---------- light theme override (toggle via [data-theme="light"] on <html>) */
+:root[data-theme="light"] {
+  --bg-0: #F4F6FA;
+  --bg-1: #FFFFFF;
+  --bg-2: #ECF0F6;
+  --surface: #FFFFFF;
+  --surface-2: #F4F6FA;
+  --surface-3: #E3E8F0;
+  --border: #DBE2EC;
+  --border-strong: #C0CAD8;
+  --border-soft: #ECF0F6;
+
+  --cyan: #0091B5;
+  --cyan-dim: #00768F;
+  --cyan-glow: rgba(0, 145, 181, 0.30);
+  --gold: #B36A12;
+  --gold-dim: #905512;
+  --emerald: #1F9D55;
+  --emerald-dim: #16804A;
+  --coral: #D63D5C;
+  --violet: #6B4FD8;
+  --magenta: #B23A85;
+
+  --ink: #0F1526;
+  --ink-2: #2E3A5E;
+  --ink-3: #5A6786;
+  --ink-4: #8590AB;
+  --ink-5: #C0CAD8;
+
+  --shadow-sm: 0 1px 2px rgba(15,21,38,0.06);
+  --shadow-md: 0 6px 20px rgba(15,21,38,0.08);
+  --shadow-glow: 0 0 18px rgba(0,145,181,0.18);
+  --shadow-glow-gold: 0 0 18px rgba(179,106,18,0.18);
+
+  --hover-tint: rgba(15,21,38,0.03);
+  --hover-tint-strong: rgba(15,21,38,0.06);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -278,3 +320,101 @@ body {
   content: ""; flex: 1; height: 1px;
   background: linear-gradient(90deg, transparent, var(--border-strong), transparent);
 }
+
+/* ---------- soft chip variant (no border, low contrast) ---------- */
+.hh-chip-soft {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-3);
+  padding: 4px 8px;
+}
+
+/* ---------- overflow menu ---------- */
+.hh-overflow-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  color: var(--ink-2);
+  cursor: pointer; font-size: 16px;
+  transition: background .15s, border-color .15s;
+}
+.hh-overflow-btn:hover { background: var(--hover-tint-strong); border-color: var(--ink-3); }
+.hh-overflow-menu {
+  position: absolute; top: calc(100% + 6px); right: 0;
+  min-width: 200px; padding: 6px;
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: 12px; box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+  z-index: 50;
+}
+.hh-overflow-menu button {
+  width: 100%; padding: 9px 12px;
+  background: transparent; border: 0;
+  text-align: left; color: var(--ink-2);
+  font-family: var(--font-body); font-size: 13px;
+  border-radius: 8px; cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+}
+.hh-overflow-menu button:hover { background: var(--hover-tint-strong); color: var(--ink); }
+.hh-overflow-menu .hh-overflow-sep { height: 1px; background: var(--border-soft); margin: 4px 6px; }
+
+/* ---------- collapsed sidebar ---------- */
+.hh-sidenav { transition: width .18s ease; }
+.hh-sidenav.is-collapsed { width: 64px !important; }
+.hh-sidenav.is-collapsed .hh-sidenav-label,
+.hh-sidenav.is-collapsed .hh-sidenav-section-label,
+.hh-sidenav.is-collapsed .hh-sidenav-project,
+.hh-sidenav.is-collapsed .hh-sidenav-user-meta { display: none !important; }
+.hh-sidenav.is-collapsed .hh-sidenav-item { justify-content: center; padding-left: 0; padding-right: 0; }
+.hh-sidenav.is-collapsed .hh-sidenav-logo-text { display: none; }
+
+/* ---------- responsive breakpoints ---------- */
+/* Tablet & smaller laptops: collapse the dense main grids. */
+@media (max-width: 1100px) {
+  .hh-grid-main { grid-template-columns: 1fr !important; }
+  .hh-grid-3 { grid-template-columns: 1fr 1fr !important; }
+  .hh-grid-5 { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) !important; }
+  .hh-pad { padding-left: 20px !important; padding-right: 20px !important; }
+}
+
+/* Narrow tablets: tighter padding, smaller hero. */
+@media (max-width: 900px) {
+  .hh-grid-2 { grid-template-columns: 1fr !important; }
+  .hh-grid-3 { grid-template-columns: 1fr !important; }
+  .hh-sidenav { width: 64px !important; }
+  .hh-sidenav .hh-sidenav-label,
+  .hh-sidenav .hh-sidenav-section-label,
+  .hh-sidenav .hh-sidenav-project,
+  .hh-sidenav .hh-sidenav-user-meta,
+  .hh-sidenav .hh-sidenav-logo-text { display: none !important; }
+  .hh-sidenav .hh-sidenav-item { justify-content: center; padding-left: 0; padding-right: 0; }
+  .hh-topbar-meta { display: none !important; }
+}
+
+/* Phones: hide side nav entirely; mobile hamburger surfaces it. */
+@media (max-width: 700px) {
+  .hh-sidenav { display: none !important; }
+  .hh-sidenav.is-open { display: flex !important; position: fixed; top: 0; bottom: 0; left: 0; z-index: 240; width: 240px !important; }
+  .hh-sidenav.is-open .hh-sidenav-label,
+  .hh-sidenav.is-open .hh-sidenav-section-label,
+  .hh-sidenav.is-open .hh-sidenav-project,
+  .hh-sidenav.is-open .hh-sidenav-user-meta,
+  .hh-sidenav.is-open .hh-sidenav-logo-text { display: revert !important; }
+  .hh-sidenav.is-open .hh-sidenav-item { justify-content: flex-start; padding-left: 12px; }
+  .hh-pad { padding-left: 14px !important; padding-right: 14px !important; }
+  .hh-topbar { padding: 12px 14px !important; }
+}
+
+/* Keyboard-shortcuts modal helper */
+.hh-kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; padding: 2px 6px;
+  background: var(--bg-0); border: 1px solid var(--border-strong);
+  border-radius: 5px; color: var(--ink-2);
+  font-family: var(--font-mono); font-size: 11px;
+}
+
+/* Pretty scrollbar already exists. Hide overflow for very dense rows. */
+.hh-no-scrollbar::-webkit-scrollbar { display: none; }
+.hh-no-scrollbar { scrollbar-width: none; }

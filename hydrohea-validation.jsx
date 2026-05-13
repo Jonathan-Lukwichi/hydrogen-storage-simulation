@@ -26,9 +26,9 @@ function HHValidation() {
             </button>
           </>
         }/>
-        <div className="hh-scroll" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
+        <div className="hh-scroll hh-pad" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
           {/* mesh comparison */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
+          <div className="hh-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
             {[
               { name: 'Coarse', elems: '2 140', err: '4.0%', color: 'var(--coral)', t: 0.55 },
               { name: 'Medium', elems: '6 720', err: '2.0%', color: 'var(--gold)', t: 0.65 },

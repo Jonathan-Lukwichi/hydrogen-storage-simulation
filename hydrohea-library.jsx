@@ -50,12 +50,12 @@ function HHLibrary() {
             <button className="hh-btn hh-btn-primary" style={{ padding: '8px 16px', fontSize: 12 }} onClick={() => ctx.openModal({ content: <window.HHModalNewAlloy ctx={ctx} /> })}>+ New alloy</button>
           </>
         }/>
-        <div className="hh-scroll" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-            <window.HHKpi label="Total alloys" value={ctx.alloys.length + ''} unit="" accent="cyan" />
-            <window.HHKpi label="Lab-validated" value={totalLab + ''} unit="" accent="emerald" />
-            <window.HHKpi label="AI-predicted" value={totalAi + ''} unit="" accent="violet" />
-            <window.HHKpi label="Best uptake" value={bestUptake.toFixed(3)} unit="wt%" accent="gold" />
+        <div className="hh-scroll hh-pad" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
+          <div className="hh-grid-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+            <window.HHKpi primary label="Total alloys" value={ctx.alloys.length + ''} unit="" accent="violet" />
+            <window.HHKpi label="Lab-validated" value={totalLab + ''} unit="" accent="neutral" />
+            <window.HHKpi label="AI-predicted" value={totalAi + ''} unit="" accent="neutral" />
+            <window.HHKpi label="Best uptake" value={bestUptake.toFixed(3)} unit="wt%" accent="neutral" />
           </div>
 
           {/* search + filters */}

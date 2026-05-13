@@ -13,9 +13,10 @@
 
 <style>
   html, body, #root { height: 100%; }
-  body { margin: 0; background: #050811; }
+  body { margin: 0; background: var(--bg-0); }
 
-  /* Route switcher pill — floats top-right when no marketing/side nav is showing. */
+  /* Route switcher pill — only visible with ?dev=1 (kept as a preview switcher).
+     Inside the app, the sidebar is the single source of navigation truth. */
   .hh-route-pill {
     position: fixed; top: 16px; right: 24px; z-index: 200;
     display: inline-flex; align-items: center; gap: 2px;
@@ -43,12 +44,14 @@
     background: var(--surface-2);
     box-shadow: inset 0 0 0 1px var(--border-strong);
   }
+  .hh-route-pill .hh-pill-tag {
+    padding: 4px 8px; color: var(--gold);
+    font-size: 9px; letter-spacing: 0.12em;
+  }
 
   /* App-screen containers. */
   .hh-screen { width: 100%; height: 100vh; overflow: hidden; }
   .hh-screen-scroll { width: 100%; min-height: 100vh; overflow-x: hidden; }
-  /* The shared .hh-art class clips overflow for artboards. The landing page is
-     a tall marketing page, so let it expand naturally when used as a route. */
   .hh-screen-scroll > .hh-art { height: auto; overflow: visible; }
 
   /* Toast slide-in. */
@@ -57,8 +60,19 @@
     to   { transform: translateY(0);    opacity: 1; }
   }
 
-  /* Running spinner used inline. */
+  /* Running spinner. */
   .hh-spin { animation: hh-spin 0.9s linear infinite; display: inline-block; }
+
+  /* Mobile-nav hamburger (≤ 700 px). */
+  .hh-mobile-nav {
+    display: none;
+    position: fixed; top: 12px; left: 12px; z-index: 250;
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(10,14,28,0.9); border: 1px solid var(--border-strong);
+    color: var(--ink); font-size: 16px; cursor: pointer;
+    backdrop-filter: blur(14px);
+  }
+  @media (max-width: 700px) { .hh-mobile-nav { display: inline-flex; align-items: center; justify-content: center; } }
 </style>
 
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
@@ -84,7 +98,7 @@ const ROUTES = [
   { id: 'landing',    label: 'Landing',    component: 'HHLanding' },
   { id: 'signin',     label: 'Sign in',    component: 'HHSignIn' },
   { id: 'overview',   label: 'Overview',   component: 'HHOverview' },
-  { id: 'home',       label: 'Overview',   component: 'HHOverview', hidden: true },  // alias from side-nav
+  { id: 'home',       label: 'Overview',   component: 'HHOverview', hidden: true },
   { id: 'simulator',  label: 'Simulator',  component: 'HHDashboard' },
   { id: 'ai',         label: 'AI',         component: 'HHAIPredictor' },
   { id: 'library',    label: 'Library',    component: 'HHLibrary' },
@@ -101,6 +115,8 @@ function routeFromHash() {
   return ROUTE_MAP[h] ? h : 'landing';
 }
 
+const DEV_MODE = /[?&]dev=1\b/.test(window.location.search);
+
 function App() {
   const [route, setRoute] = useState(routeFromHash);
 
@@ -115,15 +131,18 @@ function App() {
   const current = ROUTE_MAP[route] || ROUTE_MAP.landing;
   const Screen = window[current.component];
 
-  // Landing & sign-in have their own internal full-page layouts.
   const useScroll = route === 'landing';
-  // Hide the dev-route pill on landing (marketing nav takes over) and sign-in (focused entry).
-  const showPill = route !== 'landing' && route !== 'signin';
+
+  // The route pill is a preview/dev switcher. The sidebar is the real nav inside
+  // the app — keep the pill OFF by default so it doesn't compete. Re-enable
+  // with ?dev=1 in the URL when previewing all screens.
+  const showPill = DEV_MODE;
 
   return (
     <window.HHProvider>
       {showPill && (
-        <div className="hh-route-pill" role="tablist" aria-label="HydroHEA sections">
+        <div className="hh-route-pill" role="tablist" aria-label="HydroHEA dev switcher">
+          <span className="hh-pill-tag">DEV</span>
           {ROUTES.filter(r => !r.hidden).map(r => (
             <button
               key={r.id}
@@ -139,7 +158,7 @@ function App() {
 
       <div className={useScroll ? 'hh-screen-scroll' : 'hh-screen'}>
         {Screen ? <Screen /> : (
-          <div style={{ padding: 40, color: '#C9D2E3', fontFamily: 'Inter, sans-serif' }}>
+          <div style={{ padding: 40, color: 'var(--ink-2)', fontFamily: 'Inter, sans-serif' }}>
             Loading {current.label}…
           </div>
         )}
