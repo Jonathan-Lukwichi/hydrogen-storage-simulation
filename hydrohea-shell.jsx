@@ -231,6 +231,9 @@ function HHTopBar({ title, subtitle, actions, hideRun }) {
     { label: 'Toggle sidebar', icon: ctx?.sidebarCollapsed ? '›' : '‹', shortcut: ']', onClick: () => ctx && ctx.setSidebarCollapsed(!ctx.sidebarCollapsed) },
     { label: ctx?.theme === 'light' ? 'Dark mode' : 'Light mode', icon: ctx?.theme === 'light' ? '☾' : '☀', shortcut: 'T', onClick: () => ctx && ctx.toggleTheme() },
     { label: 'Keyboard shortcuts', icon: '⌨', shortcut: '?', onClick: () => ctx && ctx.openShortcuts() },
+    '-',
+    { label: 'Back to landing', icon: '⌂', onClick: () => ctx && ctx.navigate('landing') },
+    { label: 'Sign out', icon: '⇥', onClick: () => ctx && ctx.signOut() },
   ];
 
   return (

@@ -91,7 +91,11 @@ function HHProvider({ children }) {
 
   const [alloys, setAlloys] = React.useState(SEED_ALLOYS);
   const [authed, setAuthed] = React.useState(false);
-  const [user, setUser] = React.useState({ name: 'C. Lukwichi', org: 'ESIS · Metallurgy', initials: 'CL' });
+  const [user, setUser] = React.useState({
+    name: 'Christian Lukwichi',
+    org: 'BEng Tech Hons · Metallurgy Engineering',
+    initials: 'CL',
+  });
 
   // Layout / theming state (persisted to localStorage so reloads remember).
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(() => {
@@ -216,8 +220,19 @@ function HHProvider({ children }) {
 
   const signIn = React.useCallback((info) => {
     setAuthed(true);
-    if (info) setUser({ name: info.name || user.name, org: info.org || user.org, initials: (info.name || user.name).split(' ').map(s => s[0]).join('').slice(0,2).toUpperCase() });
-    toast(`Welcome back, ${(info && info.name) || user.name.split(' ')[0]}`, 'success');
+    // Only override the profile when the caller explicitly provided a name —
+    // otherwise keep the default workspace owner (Christian Lukwichi) so the
+    // demo doesn't show "u22872966"-style email-derived usernames.
+    const explicitName = info && info.name && info.name.trim();
+    if (explicitName) {
+      setUser({
+        name: info.name,
+        org: info.org || user.org,
+        initials: info.name.split(/\s+/).map(s => s[0]).join('').slice(0, 2).toUpperCase(),
+      });
+    }
+    const greet = explicitName ? info.name.split(' ')[0] : user.name.split(' ')[0];
+    toast(`Welcome back, ${greet}`, 'success');
     closeModal();
     navigate('overview');
   }, [user, toast, closeModal, navigate]);
@@ -476,7 +491,9 @@ function HHModalSignIn({ ctx }) {
   const [form, setForm] = React.useState({ name: '', email: '', password: '', org: '' });
   const submit = () => {
     if (!form.email || !form.password) { ctx.toast('Email & password required', 'error'); return; }
-    ctx.signIn({ name: form.name || form.email.split('@')[0], org: form.org });
+    // Only pass `name` if the user explicitly typed one — otherwise the
+    // provider keeps the default workspace owner (Christian Lukwichi).
+    ctx.signIn({ name: form.name.trim() || undefined, org: form.org.trim() || undefined });
   };
   return (
     <div style={{ padding: 32 }}>
@@ -506,7 +523,7 @@ function HHModalSignIn({ ctx }) {
         {mode === 'signin' ? 'Sign in →' : 'Create account →'}
       </button>
       <div style={{ marginTop: 16, fontSize: 11.5, color: 'var(--ink-3)', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>
-        Or continue with <a onClick={() => ctx.signIn({ name: 'Demo Engineer' })} style={{ color: 'var(--cyan)', cursor: 'pointer' }}>SSO · GOOGLE</a>
+        Or continue with <a onClick={() => ctx.signIn()} style={{ color: 'var(--cyan)', cursor: 'pointer' }}>SSO · GOOGLE</a>
       </div>
     </div>
   );
@@ -654,34 +671,62 @@ function HHOverview() {
   const ctx = window.useHH();
   const last = ctx.runs[0];
   const p = window.HHpredict(ctx.composition, ctx.opTemp);
+  const best = ctx.runs.reduce((m, r) => (r.uptake > (m ? m.uptake : 0)) ? r : m, null);
+  const firstName = (ctx.user.name || '').split(' ')[0] || 'there';
+
+  // Friendly "Al30Fe35Ni35" -> "Aluminum 30 / Iron 35 / Nickel 35"
+  const prettyAlloy = (s) => {
+    const m = String(s).match(/Al(\d+)Fe(\d+)Ni(\d+)/);
+    return m ? `Aluminum ${m[1]} · Iron ${m[2]} · Nickel ${m[3]}` : s;
+  };
+
   return (
     <div className="hh-art" style={{ display: 'flex', height: '100%' }}>
       <window.HHSideNav active="home" />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-0)' }}>
-        <window.HHTopBar title="Overview" subtitle="Workspace" actions={
+        <window.HHTopBar title="Overview" subtitle="Your workspace" actions={
           <>
+            <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }} onClick={() => ctx.navigate('landing')}>← Landing</button>
             <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }} onClick={() => ctx.exportItem('Workspace digest PDF')}>Export digest</button>
-            <button className="hh-btn hh-btn-primary" style={{ padding: '8px 16px', fontSize: 12 }} onClick={() => ctx.navigate('simulator')}>Open simulator →</button>
+            <button className="hh-btn hh-btn-primary" style={{ padding: '8px 16px', fontSize: 12 }} onClick={() => ctx.navigate('simulator')}>Test a recipe →</button>
           </>
         }/>
         <div className="hh-scroll hh-pad" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
+
+          {/* friendly welcome banner */}
+          <div className="hh-card hh-card-elev" style={{ padding: 28, marginBottom: 16, background: 'linear-gradient(135deg, var(--surface-2), var(--surface))', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, right: 0, width: '40%', height: '100%', background: 'radial-gradient(circle at top right, rgba(0,229,255,0.10), transparent 70%)', pointerEvents: 'none' }} />
+            <div className="hh-eyebrow" style={{ marginBottom: 10 }}><span className="dot" />TODAY</div>
+            <h2 className="hh-display" style={{ fontSize: 28, margin: '0 0 10px', position: 'relative' }}>
+              Welcome back, {firstName}.
+            </h2>
+            <p style={{ fontSize: 14, color: 'var(--ink-2)', margin: 0, lineHeight: 1.6, maxWidth: 720, position: 'relative' }}>
+              Your team ran <b style={{color:'var(--cyan)'}}>{ctx.runs.length} experiments</b> this week.
+              The <b>best metal recipe so far</b> is <b style={{color:'var(--gold)'}}>{best ? prettyAlloy(best.alloy) : 'Aluminum 30 · Iron 35 · Nickel 35'}</b>{' '}
+              — it holds about <b style={{color:'var(--emerald)'}}>{best ? best.uptake.toFixed(3) : '0.114'} grams of hydrogen per 100 grams of metal</b>.
+              Pick a task below to keep exploring.
+            </p>
+          </div>
+
+          {/* plain-language KPIs */}
           <div className="hh-grid-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-            <window.HHKpi primary label="Predicted uptake" value={p.uptake.toFixed(3)} unit="wt%" accent="cyan" delta="+8.4%" />
+            <window.HHKpi primary label="Best recipe found" value={best ? best.uptake.toFixed(3) : '0.114'} unit="g H₂ / 100 g metal" accent="cyan" />
+            <window.HHKpi label="Experiments this week" value={ctx.runs.length + ''} unit="runs" accent="neutral" />
+            <window.HHKpi label="Recipes in library" value={ctx.alloys.length + ''} unit="alloys" accent="neutral" />
             <window.HHKpi label="Active project" value="AlFeNi" unit="v3.2" accent="neutral" />
-            <window.HHKpi label="Runs this week" value={ctx.runs.length + ''} unit="" accent="neutral" />
-            <window.HHKpi label="Library size" value={ctx.alloys.length + ''} unit="alloys" accent="neutral" />
           </div>
 
           <div className="hh-grid-main" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 16, marginBottom: 16 }}>
             <div className="hh-card hh-card-elev" style={{ padding: 22 }}>
-              <div className="hh-eyebrow" style={{ marginBottom: 14 }}><span className="dot" />JUMP IN</div>
-              <h3 className="hh-display" style={{ fontSize: 22, margin: '0 0 16px' }}>Resume where you left off</h3>
+              <div className="hh-eyebrow" style={{ marginBottom: 12 }}><span className="dot" />WHAT YOU CAN DO</div>
+              <h3 className="hh-display" style={{ fontSize: 22, margin: '0 0 4px' }}>Pick a task</h3>
+              <p style={{ fontSize: 12.5, color: 'var(--ink-3)', margin: '0 0 16px' }}>Four simple actions cover every workflow in HydroHEA.</p>
               <div className="hh-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
                 {[
-                  { t: 'Multi-Physics Simulator', d: 'Continue ' + (last ? last.id : 'run-78f3a'), r: 'simulator', c: 'var(--cyan)' },
-                  { t: 'AI Composition Predictor', d: 'Tune ' + window.HHfmtAlloy(ctx.composition), r: 'ai', c: 'var(--gold)' },
-                  { t: 'Materials Library', d: ctx.alloys.length + ' alloys indexed', r: 'library', c: 'var(--violet)' },
-                  { t: 'Validation Studio', d: 'Mesh sweep · ' + (last?.mesh || 'fine'), r: 'validation', c: 'var(--emerald)' },
+                  { t: 'Test a metal recipe', d: 'See how much hydrogen any aluminium / iron / nickel mix would soak up.', r: 'simulator', c: 'var(--cyan)',     icon: '⬡' },
+                  { t: 'Ask the AI for a better one', d: 'Get instant predictions and ranked suggestions from our trained model.', r: 'ai',        c: 'var(--gold)',     icon: '✦' },
+                  { t: 'Browse the recipe library', d: `${ctx.alloys.length} ready-made alloys, sortable and filterable.`,        r: 'library',   c: 'var(--violet)',   icon: '◈' },
+                  { t: 'Double-check the math',    d: 'Run a mesh sweep to confirm your last result converged within 5 %.',       r: 'validation',c: 'var(--emerald)',  icon: '◐' },
                 ].map(card => (
                   <div key={card.r} onClick={() => ctx.navigate(card.r)} style={{
                     padding: 16, borderRadius: 12, border: '1px solid var(--border)',
@@ -689,8 +734,11 @@ function HHOverview() {
                   }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = card.c; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{card.t}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)' }}>{card.d}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                      <span style={{ color: card.c, fontSize: 20, width: 22, textAlign: 'center' }}>{card.icon}</span>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>{card.t}</div>
+                    </div>
+                    <div style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.5 }}>{card.d}</div>
                     <div style={{ marginTop: 12, fontSize: 11, color: card.c, fontFamily: 'var(--font-mono)' }}>OPEN →</div>
                   </div>
                 ))}
@@ -698,19 +746,42 @@ function HHOverview() {
             </div>
 
             <div className="hh-card hh-card-elev" style={{ padding: 22 }}>
-              <div className="hh-eyebrow" style={{ marginBottom: 14 }}><span className="dot" style={{ background: 'var(--gold)' }} />RECENT RUNS</div>
+              <div className="hh-eyebrow" style={{ marginBottom: 12 }}><span className="dot" style={{ background: 'var(--gold)' }} />RECENT EXPERIMENTS</div>
+              <p style={{ fontSize: 12, color: 'var(--ink-3)', margin: '0 0 12px' }}>Latest recipes you and your team tested.</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {ctx.runs.slice(0, 6).map(r => (
-                  <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 10, alignItems: 'center', padding: '10px 12px', borderRadius: 8, background: 'var(--bg-0)', border: '1px solid var(--border)' }}>
-                    <div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink)' }}>{r.id}</div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-3)' }}>{r.alloy} · {r.ts}</div>
+                  <div key={r.id} style={{ padding: '10px 12px', borderRadius: 8, background: 'var(--bg-0)', border: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{prettyAlloy(r.alloy)}</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--cyan)' }}>{r.uptake.toFixed(3)} wt%</div>
                     </div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--cyan)' }}>{r.uptake.toFixed(3)} wt%</div>
-                    <span className="hh-chip hh-chip-emerald" style={{ padding: '2px 6px', fontSize: 9 }}>{r.status.toUpperCase()}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-4)' }}>{r.ts} · {r.dur || '12 s'}</div>
+                      <span className="hh-chip hh-chip-emerald" style={{ padding: '2px 6px', fontSize: 9 }}>DONE</span>
+                    </div>
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+
+          {/* plain-language explainer */}
+          <div className="hh-card hh-card-elev" style={{ padding: 22, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, right: 0, width: '30%', height: '100%', background: 'radial-gradient(circle at top right, rgba(167,139,250,0.10), transparent 70%)', pointerEvents: 'none' }} />
+            <div className="hh-eyebrow" style={{ marginBottom: 10 }}><span className="dot" style={{ background: 'var(--violet)' }} />HOW IT WORKS — IN PLAIN ENGLISH</div>
+            <h3 className="hh-display" style={{ fontSize: 18, margin: '0 0 12px' }}>What HydroHEA actually does</h3>
+            <div className="hh-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+              {[
+                { n: '1', t: 'You pick a recipe', d: 'Choose how much aluminium, iron and nickel to blend. Same idea as a cooking recipe.' },
+                { n: '2', t: 'We do the math', d: 'Our AI predicts, in less than a second, how much hydrogen the recipe will hold and how stable it will be.' },
+                { n: '3', t: 'You get a report', d: 'A clean PDF you can share with your supervisor, team or investor. No spreadsheets, no FEM software needed.' },
+              ].map(step => (
+                <div key={step.n} style={{ padding: 14, borderRadius: 10, background: 'var(--bg-0)', border: '1px solid var(--border)' }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 6, background: 'linear-gradient(135deg, var(--cyan), var(--violet))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#001', marginBottom: 10 }}>{step.n}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{step.t}</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.5 }}>{step.d}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -726,7 +797,9 @@ function HHSignIn() {
   const [form, setForm] = React.useState({ name: '', email: '', password: '', org: '' });
   const submit = () => {
     if (!form.email || !form.password) { ctx.toast('Email & password required', 'error'); return; }
-    ctx.signIn({ name: form.name || form.email.split('@')[0], org: form.org });
+    // Only pass `name` if the user explicitly typed one — otherwise the
+    // provider keeps the default workspace owner (Christian Lukwichi).
+    ctx.signIn({ name: form.name.trim() || undefined, org: form.org.trim() || undefined });
   };
   return (
     <div className="hh-art hh-grid-2" style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', height: '100%' }}>
@@ -770,7 +843,7 @@ function HHSignIn() {
             {mode === 'signin' ? 'Sign in →' : 'Create account →'}
           </button>
           <div style={{ marginTop: 14, fontSize: 11.5, color: 'var(--ink-3)', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>
-            Or continue with <a onClick={() => ctx.signIn({ name: 'Demo Engineer' })} style={{ color: 'var(--cyan)', cursor: 'pointer' }}>SSO · GOOGLE</a>
+            Or continue with <a onClick={() => ctx.signIn()} style={{ color: 'var(--cyan)', cursor: 'pointer' }}>SSO · GOOGLE</a>
           </div>
           <div style={{ marginTop: 30, paddingTop: 18, borderTop: '1px solid var(--border)', fontSize: 12, color: 'var(--ink-3)', textAlign: 'center' }}>
             <a onClick={() => ctx.navigate('landing')} style={{ color: 'var(--cyan)', cursor: 'pointer' }}>← Back to landing</a>
@@ -845,9 +918,6 @@ window.HHReports = HHReports;
 
 function HHSettings() {
   const ctx = window.useHH();
-  const [solver, setSolver] = React.useState('COMSOL-grade FEM v3.2.1');
-  const [units, setUnits] = React.useState('SI');
-  const [mesh, setMesh] = React.useState('fine');
   const [notify, setNotify] = React.useState({ email: true, slack: false, weekly: true });
   return (
     <div className="hh-art" style={{ display: 'flex', height: '100%' }}>
@@ -873,25 +943,9 @@ function HHSettings() {
               <window.HHField label="Display name" value={ctx.user.name} onChange={v => {}} />
               <window.HHField label="Organisation" value={ctx.user.org} onChange={v => {}} />
               <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--ink-3)' }}>Plan: <span style={{ color: 'var(--gold)' }}>★ Engineer · 14-day trial</span> · 7 days remaining</div>
-            </div>
-
-            <div className="hh-card hh-card-elev" style={{ padding: 22 }}>
-              <div className="hh-eyebrow" style={{ marginBottom: 14 }}><span className="dot" style={{ background: 'var(--gold)' }} />SOLVER DEFAULTS</div>
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', marginBottom: 6, letterSpacing: '0.08em' }}>SOLVER</div>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {['COMSOL-grade FEM v3.2.1', 'OpenFOAM-coupled v2.4', 'In-house spectral'].map(s => (
-                    <button key={s} onClick={() => setSolver(s)} className={`hh-chip ${solver === s ? 'hh-chip-cyan' : ''}`} style={{ cursor: 'pointer', border: 'none' }}>{s}</button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', marginBottom: 6, letterSpacing: '0.08em' }}>DEFAULT MESH</div>
-                <window.HHPillRow items={['coarse', 'medium', 'fine']} active={mesh} onChange={setMesh} />
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', marginBottom: 6, letterSpacing: '0.08em' }}>UNITS</div>
-                <window.HHPillRow items={['SI', 'CGS', 'Imperial']} active={units} onChange={setUnits} />
+              <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border-soft)', display: 'flex', gap: 8 }}>
+                <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }} onClick={() => ctx.navigate('landing')}>← Back to landing</button>
+                <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12, color: 'var(--coral)', borderColor: 'rgba(255,84,112,0.30)' }} onClick={ctx.signOut}>Sign out</button>
               </div>
             </div>
 
@@ -919,18 +973,25 @@ function HHSettings() {
             </div>
 
             <div className="hh-card hh-card-elev" style={{ padding: 22 }}>
-              <div className="hh-eyebrow" style={{ marginBottom: 14 }}><span className="dot" style={{ background: 'var(--coral)' }} />API & INTEGRATIONS</div>
-              <div style={{ padding: 12, background: 'var(--bg-0)', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 12 }}>
-                <div style={{ fontSize: 11, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', marginBottom: 6 }}>API TOKEN</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <code style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--cyan)' }}>hh_sk_5f3a••••••••••••••••</code>
-                  <button className="hh-btn hh-btn-ghost" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => { if (navigator.clipboard) navigator.clipboard.writeText('hh_sk_5f3a_demo_token').catch(()=>{}); ctx.toast('Token copied', 'success'); }}>Copy</button>
-                  <button className="hh-btn hh-btn-ghost" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => ctx.toast('Token rotated · old token revoked', 'success')}>Rotate</button>
-                </div>
+              <div className="hh-eyebrow" style={{ marginBottom: 14 }}><span className="dot" style={{ background: 'var(--coral)' }} />ABOUT THIS WORKSPACE</div>
+              <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.55, marginBottom: 14 }}>
+                HydroHEA is a research prototype built on the AlFeNi multi-physics
+                framework from <b>Christian Lukwichi's</b> metallurgy thesis. Every
+                number you see in the app is computed live from textbook physics
+                (Fick diffusion, Arrhenius, linear elasticity) and a polynomial
+                surrogate trained on those equations at startup.
               </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {['COMSOL', 'MATLAB', 'Python SDK', 'REST API', 'Webhooks'].map(t => (
-                  <span key={t} className="hh-chip">{t}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border-soft)' }}>
+                {[
+                  ['Version', 'HydroHEA v3.2'],
+                  ['Solver', 'In-browser analytic'],
+                  ['Surrogate', 'Polynomial ridge regression'],
+                  ['Data',   'Mock library · physics-derived predictions'],
+                ].map(([k, v]) => (
+                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                    <span style={{ color: 'var(--ink-3)' }}>{k}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-2)' }}>{v}</span>
+                  </div>
                 ))}
               </div>
             </div>
@@ -947,8 +1008,7 @@ function HHDocs() {
   const groups = [
     { t: 'Getting started', items: ['Quickstart · run your first simulation', 'Composition designer concepts', 'Understanding mesh sensitivity', 'AI predictor — read the SHAP plot'] },
     { t: 'Physics modules', items: ['Transport of diluted species', 'Heat transfer in solids', 'Solid mechanics · von Mises', 'Arrhenius temperature dependence'] },
-    { t: 'AI surrogates', items: ['XGBoost-HEA v3 reference', 'Gaussian Process regressor', 'Composition-property maps', 'Bayesian acquisition (Pareto)'] },
-    { t: 'Integrations', items: ['Python SDK', 'COMSOL bridge', 'REST API', 'Webhook events'] },
+    { t: 'For everyone', items: ['What is a high-entropy alloy?', 'Why hydrogen storage matters', 'Reading your PDF report', 'Glossary of metallurgy terms'] },
   ];
   return (
     <div className="hh-art" style={{ display: 'flex', height: '100%' }}>
