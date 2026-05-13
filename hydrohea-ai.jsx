@@ -30,15 +30,20 @@ function HHAIPredictor() {
     stability: p.stability.toFixed(3),
   };
 
-  const shapData = [
-    { feat: 'Ni content', impact: +0.041, color: 'var(--emerald)' },
-    { feat: 'Lattice param.', impact: +0.028, color: 'var(--emerald)' },
-    { feat: 'Al content', impact: +0.018, color: 'var(--emerald)' },
-    { feat: 'Atomic radius δ', impact: -0.012, color: 'var(--coral)' },
-    { feat: 'Operating T', impact: -0.022, color: 'var(--coral)' },
-    { feat: 'Mixing entropy', impact: +0.009, color: 'var(--emerald)' },
-    { feat: 'VEC', impact: -0.005, color: 'var(--coral)' },
-  ];
+  // SHAP attribution comes from the surrogate; each row's `impact` is the
+  // marginal change in predicted uptake when that feature alone moves from
+  // baseline to current value. So bars actually move when the user tunes.
+  const shapData = React.useMemo(
+    () => (ctx.shapAttribution ? ctx.shapAttribution().map(s => ({
+      ...s, color: s.impact >= 0 ? 'var(--emerald)' : 'var(--coral)',
+    })) : []),
+    [ctx.shapAttribution, ctx.composition, ctx.opTemp]
+  );
+  // Plain-language interpretation reacts to current composition + T.
+  const interp = window.HHPhysics
+    ? window.HHPhysics.interpret(p, temp)
+    : [];
+  const toneColor = { success: 'var(--emerald)', info: 'var(--cyan)', warn: 'var(--coral)' };
 
   return (
     <div className="hh-art" style={{ display: 'flex', height: '100%' }}>
@@ -170,32 +175,27 @@ function HHAIPredictor() {
             </div>
           </div>
 
+          {/* interpretation card — plain-language reading of the current prediction */}
+          <div className="hh-card hh-card-elev" style={{ padding: 22, marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, right: 0, width: '30%', height: '100%', background: 'radial-gradient(circle at top right, rgba(167,139,250,0.10), transparent 70%)', pointerEvents: 'none' }} />
+            <div className="hh-eyebrow" style={{ marginBottom: 10 }}><span className="dot" style={{ background: 'var(--violet)' }} />WHAT THIS RECIPE MEANS</div>
+            <h3 className="hh-display" style={{ fontSize: 18, margin: '0 0 12px' }}>Plain-language interpretation</h3>
+            <div className="hh-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+              {interp.map((line, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', background: 'var(--bg-0)', borderRadius: 10, border: `1px solid ${toneColor[line.tone]}30` }}>
+                  <span style={{ color: toneColor[line.tone], fontFamily: 'var(--font-mono)', flexShrink: 0, width: 14, textAlign: 'center', marginTop: 1 }}>{line.icon}</span>
+                  <span style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5 }}>{line.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* ternary preview + history */}
           <div className="hh-grid-main" style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 16 }}>
             <div className="hh-card" style={{ padding: 22 }}>
               <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Al × Fe × Ni response map</div>
-              <div style={{ fontSize: 11, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', marginBottom: 14 }}>Predicted H₂ uptake · isocontours</div>
-              <svg viewBox="0 0 280 240" style={{ width: '100%', height: 'auto' }}>
-                <defs>
-                  <radialGradient id="ternHot" cx="0.65" cy="0.45">
-                    <stop offset="0%" stopColor="#FFB547" stopOpacity="0.9" />
-                    <stop offset="60%" stopColor="#00E5FF" stopOpacity="0.5" />
-                    <stop offset="100%" stopColor="#A78BFA" stopOpacity="0.15" />
-                  </radialGradient>
-                </defs>
-                <polygon points="140,20 260,220 20,220" fill="url(#ternHot)" stroke="var(--border-strong)" />
-                {/* contour lines */}
-                {[0.35, 0.55, 0.75].map(r => (
-                  <ellipse key={r} cx={185} cy={130} rx={60*r} ry={45*r} fill="none" stroke="rgba(255,255,255,0.15)" />
-                ))}
-                {/* current alloy marker */}
-                <circle cx="180" cy="130" r="5" fill="#fff" stroke="var(--cyan)" strokeWidth="2" />
-                <text x="186" y="124" fontSize="9" fill="var(--cyan)" fontFamily="var(--font-mono)">current</text>
-                {/* labels */}
-                <text x="140" y="14" fontSize="11" fill="var(--cyan)" textAnchor="middle" fontFamily="var(--font-mono)">Al</text>
-                <text x="266" y="234" fontSize="11" fill="var(--violet)" textAnchor="middle" fontFamily="var(--font-mono)">Fe</text>
-                <text x="14"  y="234" fontSize="11" fill="var(--gold)" textAnchor="middle" fontFamily="var(--font-mono)">Ni</text>
-              </svg>
+              <div style={{ fontSize: 11, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', marginBottom: 14 }}>Predicted H₂ uptake at {temp} K · live surrogate</div>
+              <HHTernaryHeatmap composition={ctx.composition} opTemp={temp} />
             </div>
 
             <div className="hh-card" style={{ padding: 22 }}>
@@ -232,3 +232,101 @@ function HHAIPredictor() {
 }
 
 window.HHAIPredictor = HHAIPredictor;
+
+/* =============================================================
+   HHTernaryHeatmap — live Al × Fe × Ni response map.
+   Samples the surrogate on a barycentric grid at the current
+   operating temperature and renders each cell as a hex-coloured
+   point. Re-renders automatically when composition or T change.
+   ============================================================= */
+function HHTernaryHeatmap({ composition, opTemp }) {
+  const N = 18;
+  const padX = 32, padY = 24;
+  const W = 300 - padX * 2;       // triangle horizontal span (px in viewBox)
+  const H = 240 - padY * 2;       // triangle vertical span
+  // Equilateral triangle: Al at top, Fe at bottom-right, Ni at bottom-left.
+  const apex = { x: padX + W / 2, y: padY };
+  const right = { x: padX + W,     y: padY + H };
+  const left  = { x: padX,         y: padY + H };
+
+  // Build cells along the simplex Al + Fe + Ni = N
+  const cells = React.useMemo(() => {
+    if (!window.HHSurrogate) return [];
+    const out = [];
+    let max = -Infinity, min = Infinity;
+    for (let iAl = 0; iAl <= N; iAl++) {
+      for (let iFe = 0; iFe <= N - iAl; iFe++) {
+        const iNi = N - iAl - iFe;
+        const al = (iAl / N) * 100;
+        const fe = (iFe / N) * 100;
+        const ni = (iNi / N) * 100;
+        // Clamp to slider domain to avoid extrapolating wildly at the corners.
+        if (al < 5 || fe < 5 || ni < 5) continue;
+        const u = window.HHSurrogate.predict({ al, fe, ni }, opTemp).uptake;
+        max = Math.max(max, u); min = Math.min(min, u);
+        // Barycentric -> cartesian
+        const a = iAl / N, f = iFe / N, n = iNi / N;
+        const x = a * apex.x + f * right.x + n * left.x;
+        const y = a * apex.y + f * right.y + n * left.y;
+        out.push({ x, y, u, al, fe, ni });
+      }
+    }
+    return out.map(c => ({ ...c, t: max > min ? (c.u - min) / (max - min) : 0.5, _max: max, _min: min }));
+  }, [opTemp]);
+
+  const lo = cells[0]?._min ?? 0, hi = cells[0]?._max ?? 1;
+  // Plasma-like ramp: violet → cyan → gold → coral
+  const cmap = (t) => {
+    const stops = [
+      [167, 139, 250],   // violet
+      [0,   229, 255],   // cyan
+      [255, 181,  71],   // gold
+      [255,  84, 112],   // coral
+    ];
+    const seg = Math.min(stops.length - 2, Math.floor(t * (stops.length - 1)));
+    const frac = t * (stops.length - 1) - seg;
+    const a = stops[seg], b = stops[seg + 1];
+    const r = Math.round(a[0] + (b[0] - a[0]) * frac);
+    const g = Math.round(a[1] + (b[1] - a[1]) * frac);
+    const bl = Math.round(a[2] + (b[2] - a[2]) * frac);
+    return `rgb(${r},${g},${bl})`;
+  };
+
+  // Current composition marker
+  const total = (composition.al + composition.fe + composition.ni) || 1;
+  const a = composition.al / total, f = composition.fe / total, n = composition.ni / total;
+  const markerX = a * apex.x + f * right.x + n * left.x;
+  const markerY = a * apex.y + f * right.y + n * left.y;
+
+  return (
+    <div>
+      <svg viewBox="0 0 300 260" style={{ width: '100%', height: 'auto' }}>
+        <defs>
+          <clipPath id="tern-clip">
+            <polygon points={`${apex.x},${apex.y} ${right.x},${right.y} ${left.x},${left.y}`} />
+          </clipPath>
+        </defs>
+        <g clipPath="url(#tern-clip)">
+          {cells.map((c, i) => (
+            <circle key={i} cx={c.x} cy={c.y} r={11} fill={cmap(c.t)} opacity={0.85} />
+          ))}
+        </g>
+        <polygon points={`${apex.x},${apex.y} ${right.x},${right.y} ${left.x},${left.y}`} fill="none" stroke="var(--border-strong)" strokeWidth="1" />
+        {/* current marker */}
+        <circle cx={markerX} cy={markerY} r={5.5} fill="#fff" stroke="var(--cyan)" strokeWidth={2} />
+        <circle cx={markerX} cy={markerY} r={11} fill="none" stroke="var(--cyan)" strokeWidth={1} opacity={0.5} />
+        <text x={markerX + 9} y={markerY - 8} fontSize="9" fill="var(--cyan)" fontFamily="var(--font-mono)">current</text>
+        {/* axis labels */}
+        <text x={apex.x}  y={apex.y - 8}  fontSize="11" fill="var(--cyan)"   textAnchor="middle" fontFamily="var(--font-mono)">Al</text>
+        <text x={right.x + 8} y={right.y + 8} fontSize="11" fill="var(--violet)" textAnchor="start"  fontFamily="var(--font-mono)">Fe</text>
+        <text x={left.x - 8}  y={left.y + 8}  fontSize="11" fill="var(--gold)"   textAnchor="end"    fontFamily="var(--font-mono)">Ni</text>
+      </svg>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, fontSize: 10.5, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)' }}>
+        <span>{lo.toFixed(3)}</span>
+        <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'linear-gradient(90deg, rgb(167,139,250), rgb(0,229,255), rgb(255,181,71), rgb(255,84,112))' }} />
+        <span>{hi.toFixed(3)} wt%</span>
+      </div>
+    </div>
+  );
+}
+window.HHTernaryHeatmap = HHTernaryHeatmap;

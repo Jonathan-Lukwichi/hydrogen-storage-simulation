@@ -48,6 +48,9 @@ window.HHpredict = predict;
 window.HHfmtAlloy = fmtAlloy;
 
 /* ---------------- mock library data ---------------- */
+// Reference baseline used for "vs baseline" deltas — AlFeNi at room T.
+const BASELINE = Object.freeze({ composition: { al: 30, fe: 35, ni: 35 }, opTemp: 298, surfConc: 8.0, tSec: 1800 });
+
 const SEED_ALLOYS = [
   { name: 'AlFeNi · BCC',          phase: 'BCC',    uptake: 0.114, enth: -32.1, dif: 2.4, stab: 0.78, status: 'ACTIVE',  tag: 'flagship', source: 'lab' },
   { name: 'TiZrNbFeNi',            phase: 'BCC',    uptake: 0.164, enth: -28.7, dif: 3.1, stab: 0.81, status: 'TESTED',  source: 'lab' },
@@ -81,13 +84,14 @@ function HHProvider({ children }) {
   const [modal, setModal] = React.useState(null);
   const [drawer, setDrawer] = React.useState(null);
 
-  const [runs, setRuns] = React.useState([
+  const seedRuns = React.useMemo(() => ([
     { id: 'run-78f3a', alloy: 'Al30Fe35Ni35', uptake: 0.114, status: 'complete', ts: '11:42 UTC', mesh: 'fine', dur: '47s' },
     { id: 'run-77c12', alloy: 'Al28Fe32Ni40', uptake: 0.124, status: 'complete', ts: '11:18 UTC', mesh: 'fine', dur: '46s' },
     { id: 'run-77b3f', alloy: 'Al22Fe30Ni48', uptake: 0.132, status: 'complete', ts: '10:51 UTC', mesh: 'medium', dur: '12s' },
     { id: 'run-779a2', alloy: 'Al26Fe36Ni38', uptake: 0.108, status: 'complete', ts: '10:24 UTC', mesh: 'fine', dur: '49s' },
     { id: 'run-776df', alloy: 'Al36Fe26Ni38', uptake: 0.101, status: 'complete', ts: '09:55 UTC', mesh: 'medium', dur: '11s' },
-  ]);
+  ]), []);
+  const [runs, setRuns] = React.useState(seedRuns);
 
   const [alloys, setAlloys] = React.useState(SEED_ALLOYS);
   const [authed, setAuthed] = React.useState(false);
@@ -234,7 +238,7 @@ function HHProvider({ children }) {
     const greet = explicitName ? info.name.split(' ')[0] : user.name.split(' ')[0];
     toast(`Welcome back, ${greet}`, 'success');
     closeModal();
-    navigate('overview');
+    navigate('setup');
   }, [user, toast, closeModal, navigate]);
 
   const signOut = React.useCallback(() => {
@@ -247,6 +251,73 @@ function HHProvider({ children }) {
     setAlloys(list => [{ ...a, source: 'user', status: 'EXP' }, ...list]);
     toast(`Added alloy ${a.name} to library`, 'success');
   }, [toast]);
+
+  // ----- Live deltas against the reference baseline ----------------------
+  // BASELINE.composition + BASELINE.opTemp give the reference prediction;
+  // every callsite gets "+8.4 % vs baseline" computed for real instead of
+  // hard-coded.
+  const baselinePred = React.useMemo(
+    () => window.HHpredict ? window.HHpredict(BASELINE.composition, BASELINE.opTemp) : null,
+    []
+  );
+  const currentPred = React.useMemo(
+    () => window.HHpredict ? window.HHpredict(composition, opTemp) : null,
+    [composition, opTemp]
+  );
+  const deltaPct = React.useCallback((key) => {
+    if (!baselinePred || !currentPred) return null;
+    const cur = currentPred[key], base = baselinePred[key];
+    if (typeof cur !== 'number' || typeof base !== 'number' || base === 0) return null;
+    return ((cur - base) / Math.abs(base)) * 100;
+  }, [baselinePred, currentPred]);
+  const formatDelta = React.useCallback((key, opts = {}) => {
+    const d = deltaPct(key);
+    if (d === null) return null;
+    // Some quantities are "better when smaller" — saturation time is one.
+    const sign = opts.invertGood ? -d : d;
+    const arrow = sign >= 0 ? '+' : '−';
+    return `${arrow}${Math.abs(d).toFixed(1)}%`;
+  }, [deltaPct]);
+
+  // SHAP-style additive attribution. For each input feature we compute the
+  // marginal change in predicted uptake if that single input is moved from
+  // baseline to current value (others held at baseline). Sums approximately
+  // to (current_uptake − baseline_uptake) for small deltas.
+  const shapAttribution = React.useCallback(() => {
+    if (!window.HHSurrogate) return [];
+    const S = window.HHSurrogate;
+    const base = BASELINE.composition, baseT = BASELINE.opTemp;
+    const baseP = S.predict(base, baseT).uptake;
+    const niP = S.predict({ ...base, ni: composition.ni }, baseT).uptake;
+    const alP = S.predict({ ...base, al: composition.al }, baseT).uptake;
+    const feP = S.predict({ ...base, fe: composition.fe }, baseT).uptake;
+    const TP  = S.predict(base, opTemp).uptake;
+    const delta = window.HHPhysics ? window.HHPhysics.deltaRadius({ Al: composition.al, Fe: composition.fe, Ni: composition.ni }) : 0;
+    return [
+      { feat: 'Ni content',      impact: +(niP - baseP).toFixed(4) },
+      { feat: 'Al content',      impact: +(alP - baseP).toFixed(4) },
+      { feat: 'Fe content',      impact: +(feP - baseP).toFixed(4) },
+      { feat: 'Operating T',     impact: +(TP  - baseP).toFixed(4) },
+      { feat: 'Atomic radius δ', impact: +(-delta * 0.30).toFixed(4) },
+      { feat: 'Mixing entropy',  impact: +(0.009).toFixed(4) },
+      { feat: 'VEC (proxy)',     impact: +(-0.005).toFixed(4) },
+    ];
+  }, [composition, opTemp]);
+
+  // ----- Reset everything to the seed baseline ---------------------------
+  const resetWorkspace = React.useCallback(() => {
+    setComposition({ al: 30, fe: 35, ni: 35 });
+    setOpTemp(500);
+    setSurfConc(8.0);
+    setTSec(1800);
+    setActiveField('H₂ Concentration');
+    setPlaying(false);
+    setPlaySpeed('1×');
+    setRunning(false);
+    setRuns(seedRuns);
+    setAlloys(SEED_ALLOYS);
+    toast('Experiment reset — back to a clean slate', 'success');
+  }, [seedRuns, toast]);
 
   // ----- Global keyboard shortcuts -----
   React.useEffect(() => {
@@ -317,6 +388,11 @@ function HHProvider({ children }) {
     sidebarOpen, setSidebarOpen,
     theme, setTheme, toggleTheme,
     openShortcuts,
+    // baseline + analytics
+    baseline: BASELINE,
+    baselinePred, currentPred,
+    deltaPct, formatDelta, shapAttribution,
+    resetWorkspace,
   };
 
   return (
@@ -686,9 +762,9 @@ function HHOverview() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-0)' }}>
         <window.HHTopBar title="Overview" subtitle="Your workspace" actions={
           <>
-            <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }} onClick={() => ctx.navigate('landing')}>← Landing</button>
+            <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }} onClick={() => ctx.resetWorkspace()}>↺ Reset</button>
             <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }} onClick={() => ctx.exportItem('Workspace digest PDF')}>Export digest</button>
-            <button className="hh-btn hh-btn-primary" style={{ padding: '8px 16px', fontSize: 12 }} onClick={() => ctx.navigate('simulator')}>Test a recipe →</button>
+            <button className="hh-btn hh-btn-primary" style={{ padding: '8px 16px', fontSize: 12 }} onClick={() => ctx.navigate('setup')}>Start a new experiment →</button>
           </>
         }/>
         <div className="hh-scroll hh-pad" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
@@ -723,10 +799,10 @@ function HHOverview() {
               <p style={{ fontSize: 12.5, color: 'var(--ink-3)', margin: '0 0 16px' }}>Four simple actions cover every workflow in HydroHEA.</p>
               <div className="hh-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
                 {[
-                  { t: 'Test a metal recipe', d: 'See how much hydrogen any aluminium / iron / nickel mix would soak up.', r: 'simulator', c: 'var(--cyan)',     icon: '⬡' },
-                  { t: 'Ask the AI for a better one', d: 'Get instant predictions and ranked suggestions from our trained model.', r: 'ai',        c: 'var(--gold)',     icon: '✦' },
-                  { t: 'Browse the recipe library', d: `${ctx.alloys.length} ready-made alloys, sortable and filterable.`,        r: 'library',   c: 'var(--violet)',   icon: '◈' },
-                  { t: 'Double-check the math',    d: 'Run a mesh sweep to confirm your last result converged within 5 %.',       r: 'validation',c: 'var(--emerald)',  icon: '◐' },
+                  { t: 'Build a new recipe',       d: 'Step 1 — pick a preset or tune the metal composition before running anything.', r: 'setup',     c: 'var(--cyan)',     icon: '⚗' },
+                  { t: 'Run the simulator',        d: 'Step 2 — push your recipe through the multi-physics solver and watch it heat & swell.', r: 'simulator', c: 'var(--violet)',   icon: '⬡' },
+                  { t: 'Ask the AI for advice',    d: 'Instant predictions, SHAP breakdown and Pareto-front suggestions.',          r: 'ai',        c: 'var(--gold)',     icon: '✦' },
+                  { t: 'Double-check the math',    d: 'See whether the last solver answer is reliable (mesh sensitivity ≤ 5 %).',    r: 'validation',c: 'var(--emerald)',  icon: '◐' },
                 ].map(card => (
                   <div key={card.r} onClick={() => ctx.navigate(card.r)} style={{
                     padding: 16, borderRadius: 12, border: '1px solid var(--border)',
@@ -1047,6 +1123,216 @@ function HHDocs() {
   );
 }
 window.HHDocs = HHDocs;
+
+/* ============================================================
+   HHRecipeLab — Step-1 configuration screen
+   ------------------------------------------------------------
+   This is the first thing a user sees after signing in. They
+   build a metal "recipe" (composition + operating conditions)
+   here, then choose to send it to the multi-physics solver or
+   the AI predictor. Predictions update live as sliders move.
+   ============================================================ */
+function HHRecipeLab() {
+  const ctx = window.useHH();
+  const c = ctx.composition;
+  const [phase, setPhase] = React.useState('BCC');
+  const pred = window.HHpredict(c, ctx.opTemp);
+  const interp = window.HHPhysics ? window.HHPhysics.interpret(pred, ctx.opTemp) : [];
+
+  const presets = [
+    { name: 'AlFeNi · classic',   comp: { al: 30, fe: 35, ni: 35 }, T: 500, c: 8.0, hint: 'Thesis baseline · BCC' },
+    { name: 'High-Ni boost',      comp: { al: 22, fe: 30, ni: 48 }, T: 350, c: 8.0, hint: 'Higher uptake, lower T' },
+    { name: 'Iron-rich',          comp: { al: 28, fe: 50, ni: 22 }, T: 500, c: 8.0, hint: 'Cheaper but lower uptake' },
+    { name: 'Aluminium-heavy',    comp: { al: 50, fe: 25, ni: 25 }, T: 500, c: 8.0, hint: 'Light-weight, weaker binding' },
+    { name: 'Balanced explorer',  comp: { al: 33, fe: 33, ni: 34 }, T: 400, c: 8.0, hint: 'Equiatomic starting point' },
+  ];
+
+  const applyPreset = (p) => {
+    ctx.setComposition(p.comp);
+    ctx.setOpTemp(p.T);
+    ctx.setSurfConc(p.c);
+    ctx.toast(`Loaded preset: ${p.name}`, 'success');
+  };
+
+  // Auto-normalise so Al + Fe + Ni = 100. Distribute the leftover among
+  // the other two elements proportionally.
+  const setEl = (key, val) => {
+    const v = Math.round(val);
+    const others = ['al', 'fe', 'ni'].filter(k => k !== key);
+    const remaining = Math.max(0, 100 - v);
+    const oldSum = (c[others[0]] + c[others[1]]) || 1;
+    const next = { ...c, [key]: v };
+    next[others[0]] = Math.max(0, Math.round((c[others[0]] / oldSum) * remaining));
+    next[others[1]] = 100 - v - next[others[0]];
+    if (next[others[1]] < 0) { next[others[1]] = 0; next[others[0]] = 100 - v; }
+    ctx.setComposition(next);
+  };
+
+  const toneColor = { success: 'var(--emerald)', info: 'var(--cyan)', warn: 'var(--coral)' };
+
+  return (
+    <div className="hh-art" style={{ display: 'flex', height: '100%' }}>
+      <window.HHSideNav active="setup" />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-0)' }}>
+        <window.HHTopBar
+          title="Recipe Lab"
+          subtitle={`Step 1 · pick a metal · ${window.HHfmtAlloy(c)}`}
+          hideRun
+          actions={
+            <>
+              <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }} onClick={() => ctx.resetWorkspace()}>↺ Reset</button>
+              <button className="hh-btn hh-btn-primary" style={{ padding: '8px 16px', fontSize: 12 }} onClick={() => ctx.navigate('simulator')}>Run simulator →</button>
+            </>
+          }
+        />
+        <div className="hh-scroll hh-pad" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
+
+          {/* explainer banner */}
+          <div className="hh-card hh-card-elev" style={{ padding: 24, marginBottom: 16, background: 'linear-gradient(135deg, var(--surface-2), var(--surface))', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, right: 0, width: '40%', height: '100%', background: 'radial-gradient(circle at top right, rgba(0,229,255,0.10), transparent 70%)', pointerEvents: 'none' }} />
+            <div className="hh-eyebrow" style={{ marginBottom: 10 }}><span className="dot" />STEP 1 · CONFIGURE</div>
+            <h2 className="hh-display" style={{ fontSize: 'clamp(22px, 3vw, 28px)', margin: '0 0 6px', position: 'relative' }}>Build your metal recipe</h2>
+            <p style={{ fontSize: 13.5, color: 'var(--ink-2)', margin: 0, lineHeight: 1.55, maxWidth: 720 }}>
+              Pick a preset or fine-tune the sliders. Every change updates the live prediction on the right. When you're happy, send the recipe to the <b>multi-physics simulator</b> for a full run or to the <b>AI predictor</b> for an instant detailed analysis.
+            </p>
+          </div>
+
+          {/* presets */}
+          <div className="hh-eyebrow" style={{ marginBottom: 10 }}><span className="dot" style={{ background: 'var(--gold)' }} />QUICK-START PRESETS</div>
+          <div className="hh-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 20 }}>
+            {presets.map(p => {
+              const isActive = c.al === p.comp.al && c.fe === p.comp.fe && c.ni === p.comp.ni;
+              return (
+                <button key={p.name} onClick={() => applyPreset(p)} style={{
+                  padding: 14, textAlign: 'left',
+                  borderRadius: 12, cursor: 'pointer',
+                  border: isActive ? '1px solid var(--cyan)' : '1px solid var(--border)',
+                  background: isActive ? 'rgba(0,229,255,0.06)' : 'var(--surface)',
+                  color: 'var(--ink)', fontFamily: 'var(--font-body)',
+                  transition: 'border-color .15s, background .15s',
+                }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{p.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)' }}>Al {p.comp.al} · Fe {p.comp.fe} · Ni {p.comp.ni}</div>
+                  <div style={{ fontSize: 11, color: 'var(--ink-3)', marginTop: 4 }}>{p.hint}</div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* recipe builder + live prediction */}
+          <div className="hh-grid-main" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+
+            {/* LEFT — sliders */}
+            <div className="hh-card hh-card-elev" style={{ padding: 22 }}>
+              <div className="hh-eyebrow" style={{ marginBottom: 14 }}><span className="dot" />METAL COMPOSITION</div>
+              {[
+                { label: 'Aluminum (Al)', val: c.al, key: 'al', max: 80, color: 'var(--cyan)',   sym: 'Al' },
+                { label: 'Iron (Fe)',     val: c.fe, key: 'fe', max: 80, color: 'var(--violet)', sym: 'Fe' },
+                { label: 'Nickel (Ni)',   val: c.ni, key: 'ni', max: 80, color: 'var(--gold)',   sym: 'Ni' },
+              ].map(s => (
+                <div key={s.sym} style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 22, height: 22, borderRadius: 6, background: s.color, color: '#001', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700 }}>{s.sym}</div>
+                      <span style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>{s.label}</span>
+                    </div>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12.5, color: s.color }}>{s.val} at.%</span>
+                  </div>
+                  <input type="range" min={5} max={s.max} value={s.val} onChange={e => setEl(s.key, +e.target.value)} className="hh-slider" style={{ '--p': `${((s.val - 5) / (s.max - 5)) * 100}%` }} />
+                </div>
+              ))}
+              <div style={{ padding: 12, background: 'var(--bg-0)', border: '1px solid var(--border)', borderRadius: 10, marginTop: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-3)' }}>COMPOSITION TOTAL</span>
+                  <span className="hh-chip hh-chip-emerald">{c.al + c.fe + c.ni} at.% · balanced</span>
+                </div>
+                <div style={{ display: 'flex', gap: 2, height: 22, borderRadius: 6, overflow: 'hidden' }}>
+                  <div style={{ flex: c.al || 0.01, background: 'var(--cyan)' }} />
+                  <div style={{ flex: c.fe || 0.01, background: 'var(--violet)' }} />
+                  <div style={{ flex: c.ni || 0.01, background: 'var(--gold)' }} />
+                </div>
+              </div>
+
+              <div className="hh-eyebrow" style={{ margin: '20px 0 12px' }}><span className="dot" style={{ background: 'var(--gold)' }} />OPERATING CONDITIONS</div>
+
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, color: 'var(--ink-2)' }}>Temperature</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--coral)' }}>{ctx.opTemp} K  ({(ctx.opTemp - 273).toFixed(0)} °C)</span>
+                </div>
+                <input type="range" min={298} max={700} value={ctx.opTemp} onChange={e => ctx.setOpTemp(+e.target.value)} className="hh-slider" style={{ '--p': `${((ctx.opTemp - 298) / 402) * 100}%` }} />
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, color: 'var(--ink-2)' }}>Surface H concentration</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--cyan)' }}>{ctx.surfConc.toFixed(1)} ×10³ mol/m³</span>
+                </div>
+                <input type="range" min={1} max={12} step={0.1} value={ctx.surfConc} onChange={e => ctx.setSurfConc(+e.target.value)} className="hh-slider" style={{ '--p': `${((ctx.surfConc - 1) / 11) * 100}%` }} />
+              </div>
+
+              <div>
+                <div style={{ fontSize: 11, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', marginBottom: 6, letterSpacing: '0.08em' }}>CRYSTAL STRUCTURE</div>
+                <window.HHPillRow items={['BCC', 'FCC', 'C15']} active={phase} onChange={setPhase} />
+              </div>
+            </div>
+
+            {/* RIGHT — live prediction */}
+            <div className="hh-card hh-card-elev" style={{ padding: 22, position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, right: 0, width: '40%', height: '100%', background: 'radial-gradient(circle at top right, rgba(167,139,250,0.10), transparent 70%)', pointerEvents: 'none' }} />
+              <div className="hh-eyebrow" style={{ marginBottom: 12 }}><span className="dot" style={{ background: 'var(--violet)' }} />LIVE PREDICTION</div>
+              <h3 className="hh-display" style={{ fontSize: 20, margin: '0 0 14px' }}>What this recipe would do</h3>
+
+              <div className="hh-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 14 }}>
+                <div style={{ padding: 12, background: 'var(--bg-0)', border: '1px solid var(--border)', borderRadius: 10 }}>
+                  <div style={{ fontSize: 10.5, fontFamily: 'var(--font-mono)', color: 'var(--ink-3)', letterSpacing: '0.08em' }}>H₂ UPTAKE</div>
+                  <div className="hh-num" style={{ fontSize: 26, color: 'var(--cyan)', marginTop: 4 }}>{pred.uptake.toFixed(3)} <span style={{ fontSize: 11, color: 'var(--ink-3)' }}>wt%</span></div>
+                  <div style={{ fontSize: 10.5, color: ctx.formatDelta('uptake')?.startsWith('+') ? 'var(--emerald)' : 'var(--coral)', fontFamily: 'var(--font-mono)' }}>{ctx.formatDelta('uptake') || ''} vs baseline</div>
+                </div>
+                <div style={{ padding: 12, background: 'var(--bg-0)', border: '1px solid var(--border)', borderRadius: 10 }}>
+                  <div style={{ fontSize: 10.5, fontFamily: 'var(--font-mono)', color: 'var(--ink-3)', letterSpacing: '0.08em' }}>HYDRIDE ΔH</div>
+                  <div className="hh-num" style={{ fontSize: 26, color: 'var(--violet)', marginTop: 4 }}>{pred.enthalpy.toFixed(1)} <span style={{ fontSize: 11, color: 'var(--ink-3)' }}>kJ/mol</span></div>
+                </div>
+                <div style={{ padding: 12, background: 'var(--bg-0)', border: '1px solid var(--border)', borderRadius: 10 }}>
+                  <div style={{ fontSize: 10.5, fontFamily: 'var(--font-mono)', color: 'var(--ink-3)', letterSpacing: '0.08em' }}>DIFFUSIVITY</div>
+                  <div className="hh-num" style={{ fontSize: 26, color: 'var(--emerald)', marginTop: 4 }}>{pred.diffusivity.toFixed(2)} <span style={{ fontSize: 11, color: 'var(--ink-3)' }}>×10⁻¹⁰ m²/s</span></div>
+                </div>
+                <div style={{ padding: 12, background: 'var(--bg-0)', border: '1px solid var(--border)', borderRadius: 10 }}>
+                  <div style={{ fontSize: 10.5, fontFamily: 'var(--font-mono)', color: 'var(--ink-3)', letterSpacing: '0.08em' }}>CYCLING STABILITY</div>
+                  <div className="hh-num" style={{ fontSize: 26, color: 'var(--gold)', marginTop: 4 }}>{pred.stability.toFixed(2)}</div>
+                </div>
+              </div>
+
+              <div className="hh-eyebrow" style={{ marginBottom: 8 }}><span className="dot" />WHAT THIS MEANS</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {interp.map((line, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5 }}>
+                    <span style={{ color: toneColor[line.tone], fontFamily: 'var(--font-mono)', flexShrink: 0, width: 14, textAlign: 'center', marginTop: 1 }}>{line.icon}</span>
+                    <span>{line.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* action footer */}
+          <div className="hh-card hh-card-elev" style={{ padding: 22 }}>
+            <div className="hh-eyebrow" style={{ marginBottom: 10 }}><span className="dot" style={{ background: 'var(--cyan)' }} />STEP 2 · RUN AN EXPERIMENT</div>
+            <p style={{ fontSize: 13, color: 'var(--ink-3)', margin: '0 0 14px' }}>Send the recipe above to one of these tools.</p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button className="hh-btn hh-btn-primary" style={{ padding: '12px 22px', fontSize: 13.5 }} onClick={() => ctx.navigate('simulator')}>▶ Multi-physics simulator</button>
+              <button className="hh-btn hh-btn-gold" style={{ padding: '12px 22px', fontSize: 13.5 }} onClick={() => ctx.navigate('ai')}>✦ AI predictor (instant)</button>
+              <button className="hh-btn hh-btn-ghost" style={{ padding: '12px 22px', fontSize: 13.5 }} onClick={() => ctx.navigate('validation')}>◐ Check the math</button>
+              <button className="hh-btn hh-btn-ghost" style={{ padding: '12px 22px', fontSize: 13.5, marginLeft: 'auto', color: 'var(--coral)', borderColor: 'rgba(255,84,112,0.30)' }} onClick={() => ctx.resetWorkspace()}>↺ Reset everything</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+window.HHRecipeLab = HHRecipeLab;
 
 /* ---------- expose modal builders ---------- */
 window.HHModalDemo = HHModalDemo;
