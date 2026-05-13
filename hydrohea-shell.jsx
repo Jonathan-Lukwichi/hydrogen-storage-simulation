@@ -51,15 +51,32 @@ function HHMarketingNav() {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
   return (
+    <>
+    {/* Persistent prototype banner on the landing page. */}
+    <div className="hh-proto-banner" role="status" aria-label="Prototype notice" style={{
+      position: 'absolute', top: 0, left: 0, right: 0, zIndex: 11,
+      padding: '7px clamp(20px, 5vw, 56px)',
+      background: 'linear-gradient(90deg, rgba(255,181,71,0.18), rgba(255,77,157,0.14))',
+      borderBottom: '1px solid rgba(255,181,71,0.30)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+      fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.08em',
+      color: '#FFD089', textAlign: 'center',
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)', boxShadow: '0 0 8px var(--gold)' }} />
+      <span><b style={{ color: '#FFE6BD' }}>PROTOTYPE</b> · Research demonstration only — figures and capabilities reflect a work-in-progress methodology, not a commercial product.</span>
+    </div>
     <div className="hh-marketing-nav" style={{
-      position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+      position: 'absolute', top: 30, left: 0, right: 0, zIndex: 10,
       padding: '18px clamp(20px, 5vw, 56px)',
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       borderBottom: '1px solid rgba(35,44,70,0.5)',
       background: 'rgba(5,8,17,0.65)', backdropFilter: 'blur(20px)',
       gap: 12,
     }}>
-      <div style={{ cursor: 'pointer', flexShrink: 0 }} onClick={() => ctx && ctx.navigate('landing')}><HHLogo /></div>
+      <div style={{ cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10 }} onClick={() => ctx && ctx.navigate('landing')}>
+        <HHLogo />
+        <span className="hh-chip hh-chip-gold" style={{ padding: '2px 8px', fontSize: 9.5, letterSpacing: '0.10em' }}>PROTOTYPE</span>
+      </div>
       <nav className="hh-marketing-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 28, fontSize: 13, color: 'var(--ink-2)' }}>
         {items.map((it, i) => (
           <a key={it.label} onClick={() => scrollTo(it.anchor)} style={{ color: i === 0 ? 'var(--ink)' : 'var(--ink-3)', textDecoration: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -75,6 +92,7 @@ function HHMarketingNav() {
         </button>
       </div>
     </div>
+    </>
   );
 }
 
