@@ -51,14 +51,16 @@ function HHMarketingNav() {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
   return (
-    <div style={{
+    <div className="hh-marketing-nav" style={{
       position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-      padding: '20px 56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '18px clamp(20px, 5vw, 56px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       borderBottom: '1px solid rgba(35,44,70,0.5)',
       background: 'rgba(5,8,17,0.65)', backdropFilter: 'blur(20px)',
+      gap: 12,
     }}>
-      <div style={{ cursor: 'pointer' }} onClick={() => ctx && ctx.navigate('landing')}><HHLogo /></div>
-      <nav style={{ display: 'flex', alignItems: 'center', gap: 32, fontSize: 13, color: 'var(--ink-2)' }}>
+      <div style={{ cursor: 'pointer', flexShrink: 0 }} onClick={() => ctx && ctx.navigate('landing')}><HHLogo /></div>
+      <nav className="hh-marketing-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 28, fontSize: 13, color: 'var(--ink-2)' }}>
         {items.map((it, i) => (
           <a key={it.label} onClick={() => scrollTo(it.anchor)} style={{ color: i === 0 ? 'var(--ink)' : 'var(--ink-3)', textDecoration: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
             {it.label}
@@ -66,10 +68,10 @@ function HHMarketingNav() {
           </a>
         ))}
       </nav>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div className="hh-marketing-nav-buttons" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
         <button className="hh-btn hh-btn-ghost" style={{ padding: '8px 14px', fontSize: 12 }} onClick={() => ctx && ctx.navigate('signin')}>Sign in</button>
         <button className="hh-btn hh-btn-primary" style={{ padding: '8px 16px', fontSize: 12 }} onClick={() => ctx && ctx.openModal({ content: <window.HHModalDemo ctx={ctx} /> })}>
-          Request demo <span>→</span>
+          Demo <span>→</span>
         </button>
       </div>
     </div>
@@ -108,6 +110,8 @@ function HHSideNav({ active = 'simulator' }) {
   });
 
   return (
+    <>
+    {open && <div className="hh-sidenav-backdrop is-active" onClick={() => ctx && ctx.setSidebarOpen(false)} />}
     <aside className={`hh-sidenav ${collapsed ? 'is-collapsed' : ''} ${open ? 'is-open' : ''}`} style={{
       width: 240, background: 'var(--bg-1)', borderRight: '1px solid var(--border-soft)',
       display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0,
@@ -181,6 +185,7 @@ function HHSideNav({ active = 'simulator' }) {
         </div>
       </div>
     </aside>
+    </>
   );
 }
 

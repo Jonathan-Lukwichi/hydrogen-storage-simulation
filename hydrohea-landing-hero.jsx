@@ -5,7 +5,7 @@
 function HHLandingHero() {
   const ctx = window.useHH && window.useHH();
   return (
-    <section id="hero" style={{ position: 'relative', padding: '120px 80px 80px', overflow: 'hidden' }} className="hh-radial-cyan hh-noise">
+    <section id="hero" className="hh-radial-cyan hh-noise hh-section-pad" style={{ position: 'relative', overflow: 'hidden' }}>
       {/* grid bg */}
       <div className="hh-grid-bg" style={{ position: 'absolute', inset: 0, opacity: 0.5, maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 75%)' }} />
 
@@ -13,12 +13,12 @@ function HHLandingHero() {
       <div style={{ position: 'absolute', top: 200, right: -100, width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,229,255,0.18), transparent 70%)', filter: 'blur(40px)' }} />
       <div style={{ position: 'absolute', bottom: -100, left: -100, width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(167,139,250,0.14), transparent 70%)', filter: 'blur(40px)' }} />
 
-      <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: 64, alignItems: 'center' }}>
+      <div className="hh-hero-grid" style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: 64, alignItems: 'center' }}>
         <div>
           <div className="hh-eyebrow" style={{ marginBottom: 24 }}>
             <span className="dot" />MULTI-PHYSICS SAAS · BACKED BY METALLURGY SCIENCE
           </div>
-          <h1 className="hh-display" style={{ fontSize: 76, margin: 0, marginBottom: 20 }}>
+          <h1 className="hh-display hh-hero-title" style={{ fontSize: 'clamp(40px, 6vw, 76px)', margin: 0, marginBottom: 20 }}>
             Design hydrogen-storage alloys <span style={{ background: 'linear-gradient(90deg, var(--cyan), var(--violet))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>10× faster.</span>
           </h1>
           <p style={{ fontSize: 17, lineHeight: 1.55, color: 'var(--ink-2)', margin: 0, marginBottom: 32, maxWidth: 540 }}>
@@ -35,7 +35,7 @@ function HHLandingHero() {
           </div>
 
           {/* stat strip */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24, paddingTop: 24, borderTop: '1px solid var(--border)' }}>
+          <div className="hh-hero-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24, paddingTop: 24, borderTop: '1px solid var(--border)' }}>
             {[
               { v: '0.114', u: 'wt%', l: 'Max H₂ uptake — AlFeNi' },
               { v: '<5%', u: 'err', l: 'Mesh-validated accuracy' },
@@ -62,7 +62,7 @@ function HHLandingHero() {
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.20em', color: 'var(--ink-4)', marginBottom: 22, textTransform: 'uppercase' }}>
           Trusted by mining, materials &amp; energy R&amp;D leaders
         </div>
-        <div style={{ display: 'flex', gap: 56, alignItems: 'center', flexWrap: 'wrap', opacity: 0.6 }}>
+        <div className="hh-logos" style={{ display: 'flex', gap: 56, alignItems: 'center', flexWrap: 'wrap', opacity: 0.6 }}>
           {['ANGLO AMERICAN', 'RIO TINTO', 'GLENCORE', 'BHP', 'GLOBAL MINERAL', 'NORTHAM', 'KUMBA', 'GÉCAMINES'].map(n => (
             <div key={n} style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 14, letterSpacing: '0.06em', color: 'var(--ink-3)' }}>{n}</div>
           ))}
@@ -140,7 +140,7 @@ function HHHeroPreview() {
       </div>
 
       {/* floating side card — AI insight */}
-      <div className="hh-card hh-card-elev" style={{ position: 'absolute', right: -20, bottom: -40, width: 240, padding: 14, borderRadius: 12, boxShadow: '0 20px 50px rgba(0,0,0,0.5)', borderColor: 'rgba(255,181,71,0.4)' }}>
+      <div className="hh-card hh-card-elev hh-hero-floater" style={{ position: 'absolute', right: -20, bottom: -40, width: 240, padding: 14, borderRadius: 12, boxShadow: '0 20px 50px rgba(0,0,0,0.5)', borderColor: 'rgba(255,181,71,0.4)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
           <div style={{ width: 22, height: 22, borderRadius: 6, background: 'linear-gradient(135deg, var(--gold), var(--coral))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#1a0e00' }}>✦</div>
           <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--gold)', letterSpacing: '0.08em' }}>AI INSIGHT</div>

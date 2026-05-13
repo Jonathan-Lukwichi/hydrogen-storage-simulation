@@ -395,7 +395,13 @@ body {
 /* Phones: hide side nav entirely; mobile hamburger surfaces it. */
 @media (max-width: 700px) {
   .hh-sidenav { display: none !important; }
-  .hh-sidenav.is-open { display: flex !important; position: fixed; top: 0; bottom: 0; left: 0; z-index: 240; width: 240px !important; }
+  .hh-sidenav.is-open {
+    display: flex !important;
+    position: fixed; top: 0; bottom: 0; left: 0;
+    z-index: 240;
+    width: min(85vw, 280px) !important;
+    box-shadow: 18px 0 50px rgba(0,0,0,0.55);
+  }
   .hh-sidenav.is-open .hh-sidenav-label,
   .hh-sidenav.is-open .hh-sidenav-section-label,
   .hh-sidenav.is-open .hh-sidenav-project,
@@ -403,7 +409,23 @@ body {
   .hh-sidenav.is-open .hh-sidenav-logo-text { display: revert !important; }
   .hh-sidenav.is-open .hh-sidenav-item { justify-content: flex-start; padding-left: 12px; }
   .hh-pad { padding-left: 14px !important; padding-right: 14px !important; }
-  .hh-topbar { padding: 12px 14px !important; }
+  .hh-topbar { padding: 12px 14px !important; gap: 8px !important; }
+  .hh-topbar-meta { display: none !important; }
+  /* Hide the composition chip in the top bar on phones to give the title room. */
+  .hh-topbar h1 + .hh-chip-cyan { display: none !important; }
+  /* Show the inline hamburger that's `display: none` in JS by default. */
+  .hh-mobile-nav-inline { display: inline-flex !important; align-items: center; justify-content: center; }
+}
+
+/* Sidebar backdrop when drawer is open on mobile */
+.hh-sidenav-backdrop {
+  position: fixed; inset: 0; z-index: 230;
+  background: rgba(2, 4, 10, 0.55); backdrop-filter: blur(4px);
+  display: none;
+}
+@media (max-width: 700px) {
+  .hh-sidenav.is-open ~ .hh-sidenav-backdrop,
+  .hh-sidenav-backdrop.is-active { display: block; }
 }
 
 /* Keyboard-shortcuts modal helper */
@@ -418,3 +440,98 @@ body {
 /* Pretty scrollbar already exists. Hide overflow for very dense rows. */
 .hh-no-scrollbar::-webkit-scrollbar { display: none; }
 .hh-no-scrollbar { scrollbar-width: none; }
+
+/* =============================================================
+   RESPONSIVE LANDING + GLOBAL
+   ------------------------------------------------------------
+   Fluid type, paddings & layouts so the landing page reads well
+   from a 360-px iPhone SE up to a 27" iMac, and the cockpit
+   screens stay usable on iPad portrait and Android phones.
+   ============================================================= */
+
+/* Fluid hero / section padding utility */
+.hh-section-pad { padding: clamp(48px, 8vw, 120px) clamp(20px, 6vw, 80px); }
+.hh-section-pad-sm { padding: clamp(36px, 6vw, 80px) clamp(20px, 6vw, 80px); }
+
+/* ---- 1280 px+ : full desktop, no overrides ---- */
+
+/* ---- iPad landscape / small laptops (≤ 1100 px) ---- */
+@media (max-width: 1100px) {
+  /* Landing hero stack hint — overridden by .hh-grid-main below */
+  .hh-hero-grid { gap: 32px !important; }
+  /* Landing capabilities bento: 3 cols instead of 4 */
+  .hh-bento { grid-template-columns: repeat(3, 1fr) !important; }
+}
+
+/* ---- iPad portrait & tablets (≤ 900 px) ---- */
+@media (max-width: 900px) {
+  /* Landing hero: stack the columns */
+  .hh-hero-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
+  /* AI-band side-by-side -> stack */
+  .hh-aiband { grid-template-columns: 1fr !important; gap: 32px !important; }
+  /* Pipeline 5-step -> 2-col wrapped */
+  .hh-pipeline { grid-template-columns: repeat(2, 1fr) !important; row-gap: 32px !important; }
+  .hh-pipeline-line { display: none !important; }
+  /* Bento: 2 cols, items span 1 col instead of 2 */
+  .hh-bento { grid-template-columns: repeat(2, 1fr) !important; grid-auto-rows: auto !important; }
+  .hh-bento > * { grid-column: span 1 !important; grid-row: span 1 !important; min-height: 200px; }
+  /* Outcomes 4-up -> 2-up */
+  .hh-outcomes { grid-template-columns: repeat(2, 1fr) !important; }
+  /* Testimonial side image stacks below quote */
+  .hh-testimonial { grid-template-columns: 1fr !important; }
+  /* Cockpit top-bar — drop the metadata text for room */
+  .hh-topbar-meta { display: none !important; }
+  /* Slimmer marketing nav */
+  .hh-marketing-nav { padding: 16px 24px !important; }
+}
+
+/* ---- Phones landscape / small tablets portrait (≤ 700 px) ---- */
+@media (max-width: 700px) {
+  /* Hero: smaller headline, single-column stat strip wraps */
+  .hh-hero-title { font-size: clamp(36px, 11vw, 56px) !important; }
+  .hh-hero-stats { grid-template-columns: repeat(2, 1fr) !important; gap: 16px !important; }
+  .hh-section-pad, .hh-section-pad-sm { padding-left: 18px !important; padding-right: 18px !important; }
+  /* Marketing nav links hide; brand + CTA stay */
+  .hh-marketing-nav-links { display: none !important; }
+  .hh-marketing-nav-buttons .hh-btn { padding: 7px 11px !important; font-size: 11px !important; }
+  /* Pipeline -> single column */
+  .hh-pipeline { grid-template-columns: 1fr !important; row-gap: 24px !important; }
+  /* Bento -> single column */
+  .hh-bento { grid-template-columns: 1fr !important; }
+  /* Outcomes & footer */
+  .hh-outcomes { grid-template-columns: 1fr 1fr !important; }
+  .hh-footer { flex-direction: column !important; gap: 16px !important; text-align: center; }
+  .hh-footer-links { flex-wrap: wrap !important; justify-content: center !important; gap: 16px !important; }
+  /* Logo row in landing CTA */
+  .hh-logos { gap: 20px !important; row-gap: 12px !important; }
+  .hh-logos > div { font-size: 11px !important; }
+  /* Modal & drawer: phone-friendly */
+  .hh-modal-card { max-width: 100vw !important; width: 95vw !important; max-height: 92vh !important; }
+  .hh-modal-pad { padding: 22px !important; }
+  .hh-drawer { width: min(95vw, 420px) !important; }
+  /* Touch-friendly slider thumb */
+  .hh-slider::-webkit-slider-thumb { width: 20px; height: 20px; box-shadow: 0 0 0 5px rgba(0,229,255,0.20), 0 2px 8px rgba(0,0,0,0.4); }
+  .hh-slider::-moz-range-thumb { width: 20px; height: 20px; }
+  /* Larger tap area for ghost / primary buttons in the hero */
+  .hh-btn { min-height: 36px; }
+  /* Table cells get tighter padding on phones */
+  .hh-table th, .hh-table td { padding: 10px 10px !important; font-size: 12px; }
+}
+
+/* ---- Phones portrait (≤ 480 px) ---- */
+@media (max-width: 480px) {
+  .hh-hero-title { font-size: clamp(30px, 13vw, 44px) !important; }
+  .hh-hero-stats { grid-template-columns: 1fr 1fr !important; }
+  .hh-section-pad { padding: 44px 14px !important; }
+  .hh-section-pad-sm { padding: 36px 14px !important; }
+  .hh-outcomes { grid-template-columns: 1fr !important; }
+  .hh-route-pill { top: auto !important; bottom: 12px !important; right: 12px !important; left: 12px !important; max-width: calc(100vw - 24px); }
+  /* Hide hero floating "AI INSIGHT" card on tiny screens — overlaps */
+  .hh-hero-floater { display: none !important; }
+  /* Force charts to render at full container width */
+  .hh-card svg { max-width: 100%; height: auto; }
+}
+
+/* SVG charts should scale to their card width */
+.hh-card svg { max-width: 100%; }
+

@@ -367,21 +367,21 @@ function HHModalHost({ modal, onClose }) {
   return (
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0, background: 'rgba(2,4,10,0.7)', backdropFilter: 'blur(6px)',
-      zIndex: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+      zIndex: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(8px, 3vw, 24px)',
     }}>
-      <div onClick={e => e.stopPropagation()} style={{
+      <div onClick={e => e.stopPropagation()} className="hh-modal-card" style={{
         background: 'var(--surface)',
         border: '1px solid var(--border-strong)',
         borderRadius: 18,
         width: '100%', maxWidth: modal.wide ? 720 : 480,
-        maxHeight: '85vh', overflow: 'auto',
+        maxHeight: '90vh', overflow: 'auto',
         boxShadow: '0 30px 80px rgba(0,0,0,0.6)',
         position: 'relative',
       }}>
         <button onClick={onClose} aria-label="Close" style={{
-          position: 'absolute', top: 14, right: 14, width: 28, height: 28, borderRadius: 8,
+          position: 'absolute', top: 12, right: 12, width: 32, height: 32, borderRadius: 8,
           background: 'var(--bg-0)', border: '1px solid var(--border)', color: 'var(--ink-3)',
-          cursor: 'pointer', fontSize: 14,
+          cursor: 'pointer', fontSize: 14, zIndex: 1,
         }}>✕</button>
         {modal.content}
       </div>
@@ -395,8 +395,8 @@ function HHDrawerHost({ drawer, onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 850, display: 'flex', justifyContent: 'flex-end' }}>
       <div onClick={onClose} style={{ flex: 1, background: 'rgba(2,4,10,0.55)', backdropFilter: 'blur(4px)' }} />
-      <div style={{
-        width: 480, background: 'var(--bg-1)',
+      <div className="hh-drawer" style={{
+        width: 'min(480px, 95vw)', background: 'var(--bg-1)',
         borderLeft: '1px solid var(--border-strong)',
         display: 'flex', flexDirection: 'column',
         boxShadow: '-20px 0 60px rgba(0,0,0,0.6)',
