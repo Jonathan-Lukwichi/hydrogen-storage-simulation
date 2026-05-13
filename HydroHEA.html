@@ -144,6 +144,12 @@ function App() {
   const current = ROUTE_MAP[route] || ROUTE_MAP.landing;
   const Screen = window[current.component];
 
+  // Surface a clear warning if a route resolves but its component never
+  // attached to window (usually a runtime error in that file's <script>).
+  React.useEffect(() => {
+    if (!Screen) console.warn(`[HydroHEA] Route "${route}" expected window.${current.component} but it's undefined — falling back.`);
+  }, [route, current.component]);
+
   const useScroll = route === 'landing';
 
   // The route pill is a preview/dev switcher. The sidebar is the real nav inside
