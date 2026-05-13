@@ -60,7 +60,7 @@ function HHAIPredictor() {
             <window.HHKpi primary label="Predicted H₂ uptake" value={pred.uptake} unit="wt%" delta="+8.4%" accent="gold"
               spark="M0 22 C20 18, 40 12, 60 7 S90 4, 100 4" />
             <window.HHKpi label="Hydride enthalpy" value={pred.enthalpy} unit="kJ/mol" accent="neutral" />
-            <window.HHKpi label="Diffusivity D(T)" value={pred.diffusivity} unit="×10⁻⁷ m²/s" accent="neutral" />
+            <window.HHKpi label="Diffusivity D(T)" value={pred.diffusivity} unit="×10⁻¹⁰ m²/s" accent="neutral" />
             <window.HHKpi label="Cycling stability" value={pred.stability} unit="" accent="neutral" />
           </div>
 

@@ -161,7 +161,7 @@ function HHAlloyDetail({ alloy, ctx }) {
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 18 }}>
         <button className="hh-btn hh-btn-primary" style={{ padding: 11, justifyContent: 'center' }} onClick={apply}>Load into Simulator →</button>
-        <button className="hh-btn hh-btn-ghost" style={{ padding: 11, justifyContent: 'center' }} onClick={() => ctx.exportItem(`Alloy ${alloy.name} datasheet`)}>Export datasheet (PDF)</button>
+        <button className="hh-btn hh-btn-ghost" style={{ padding: 11, justifyContent: 'center' }} onClick={() => ctx.exportItem(`Alloy ${alloy.name} datasheet`, { alloy })}>Export datasheet (PDF)</button>
         <button className="hh-btn hh-btn-ghost" style={{ padding: 11, justifyContent: 'center' }} onClick={() => { ctx.shareLink(); }}>Share link</button>
       </div>
     </div>

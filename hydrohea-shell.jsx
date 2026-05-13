@@ -354,40 +354,49 @@ function HHHeatmap({ data, width = 280, height = 360, cmap = 'plasma', label, co
   );
 }
 
-/* ---------- procedurally generate a smooth gradient field 0..1 ---------- */
-function genField({ rows = 36, cols = 12, type = 'horizontal', t = 1, seed = 1 }) {
-  // type: 'horizontal' (high at left/exposed face), 'vertical' (gradient top to bottom),
-  // 'concentration' diffusion-like (penetration depth grows with t), 'stress' (gradient with hot spots), 'temperature'
+/* ---------- analytic field on a grid ----------
+   Uses HHPhysics closed-form solutions (Fick erfc, heat erfc, linear-elastic).
+   t is normalised 0..1 across a 3 600 s window; (x runs along the
+   1 mm penetration axis, y along the 5 mm slab). Returned values are
+   already normalised 0..1 for the colormap; the absolute scale is
+   communicated in the per-screen color-bar legend.                          */
+function genField({ rows = 36, cols = 12, type = 'concentration', t = 1, surfaceConc = 8000, boundaryT = 500, ambientT = 298, seed = 1 }) {
+  const P = window.HHPhysics;
+  const Lx = 1e-3;        // plate thickness (m)
+  const Ly = 5e-3;        // plate height (m)
+  const tSec = Math.max(0, t) * 3600;
+  // Diffusion at current operating temperature.
+  const D = P ? P.diffusivity(boundaryT) : 1e-11;
+  const alpha = P ? P.ALPHA : 1e-5;
+  // Choose normalisation reference so the colour scale stays in 0..1.
+  const sigmaRef = P ? Math.max(P.vonMisesStress(surfaceConc), 1) : 5e4;
+
   const out = [];
   for (let i = 0; i < rows; i++) {
     const row = [];
+    const y = (i / Math.max(rows - 1, 1)) * Ly;
     for (let j = 0; j < cols; j++) {
-      const x = j / (cols - 1); // 0..1
-      const y = i / (rows - 1);
+      const x = (j / Math.max(cols - 1, 1)) * Lx;
       let v = 0;
       if (type === 'concentration') {
-        // penetration: more uniform as t increases
-        const k = 0.05 + 0.95 * t;
-        v = 1 - (1 - k) * Math.pow(1 - x, 1 / (0.3 + 0.7 * t));
-        v += 0.04 * Math.sin(8 * y + seed);
+        const c = P ? P.concentration(x, tSec, surfaceConc, D) : surfaceConc * (1 - x / Lx);
+        v = c / surfaceConc;
       } else if (type === 'temperature') {
-        v = (1 - x) * (0.3 + 0.7 * t) + 0.3 * t;
-        v += 0.05 * Math.cos(6 * y + seed * 1.7);
+        const T = P ? P.temperature(x, tSec, boundaryT, ambientT, alpha) : ambientT + (boundaryT - ambientT) * (1 - x / Lx);
+        v = (T - ambientT) / Math.max(boundaryT - ambientT, 1);
       } else if (type === 'stress') {
-        // hot spot near hydrogen entry
-        const dx = 1 - x;
-        const dy = Math.abs(y - 0.5);
-        v = 0.2 + 0.85 * Math.exp(-(dx*dx*3 + dy*dy*2)) * (0.4 + 0.6 * t);
-        v += 0.05 * Math.sin(5 * y + 3 * x);
+        const c = P ? P.concentration(x, tSec, surfaceConc, D) : surfaceConc * (1 - x / Lx);
+        v = (P ? P.vonMisesStress(c) : c * 6) / sigmaRef;
       } else {
-        v = x;
+        v = 1 - x / Lx;
       }
-      out.push(Math.max(0, Math.min(1, v)));
+      // tiny y-modulation so the visualisation isn't perfectly 1-D
+      v += 0.03 * Math.sin(8 * (y / Ly) + seed);
       row.push(Math.max(0, Math.min(1, v)));
     }
-    out[out.length] = row;
+    out.push(row);
   }
-  return out.filter(Array.isArray);
+  return out;
 }
 
 /* ---------------- COLORBAR ---------------- */

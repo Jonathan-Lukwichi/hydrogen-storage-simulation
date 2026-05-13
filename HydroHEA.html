@@ -78,6 +78,18 @@
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+
+<!-- jsPDF for real client-side PDF report generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
+
+<!-- Real physics module (analytic solutions: Fick erfc, Arrhenius, etc.) -->
+<script src="hydrohea-physics.js"></script>
+
+<!-- Ridge-regression surrogate trained on the physics module at startup -->
+<script src="hydrohea-surrogate.js"></script>
+
+<!-- Real PDF report builder (uses jsPDF) -->
+<script src="hydrohea-pdf.js"></script>
 </head>
 <body>
 <div id="root"></div>
