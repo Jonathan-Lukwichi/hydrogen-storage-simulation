@@ -67,6 +67,28 @@ function HHProvider({ children }) {
   const [authed, setAuthed] = React.useState(false);
   const [user, setUser] = React.useState({ name: 'C. Lukwichi', org: 'ESIS · Metallurgy', initials: 'CL' });
 
+  // Layout / theming state (persisted to localStorage so reloads remember).
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(() => {
+    try { return localStorage.getItem('hh.sidebar') === 'collapsed'; } catch { return false; }
+  });
+  const [sidebarOpen, setSidebarOpen] = React.useState(false); // mobile only
+  const [theme, setTheme] = React.useState(() => {
+    try { return localStorage.getItem('hh.theme') || 'dark'; } catch { return 'dark'; }
+  });
+
+  React.useEffect(() => {
+    try { localStorage.setItem('hh.sidebar', sidebarCollapsed ? 'collapsed' : 'expanded'); } catch {}
+  }, [sidebarCollapsed]);
+  React.useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem('hh.theme', theme); } catch {}
+  }, [theme]);
+
+  const toggleTheme = React.useCallback(() => setTheme(t => t === 'dark' ? 'light' : 'dark'), []);
+  const openShortcuts = React.useCallback(() => {
+    setModal({ wide: false, content: <HHModalShortcuts /> });
+  }, []);
+
   const toast = React.useCallback((msg, type = 'info') => {
     const id = Math.random().toString(36).slice(2);
     setToasts(ts => [...ts, { id, msg, type }]);
@@ -160,6 +182,58 @@ function HHProvider({ children }) {
     toast(`Added alloy ${a.name} to library`, 'success');
   }, [toast]);
 
+  // ----- Global keyboard shortcuts -----
+  React.useEffect(() => {
+    let gMode = false; let gTimer = null;
+    const isTypingTarget = (el) => {
+      if (!el) return false;
+      const tag = el.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+    };
+    const onKey = (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isTypingTarget(e.target)) return;
+
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        setModal({ content: <HHModalShortcuts /> });
+        return;
+      }
+      if (e.key === 'Escape') {
+        if (modal) closeModal();
+        if (drawer) closeDrawer();
+        return;
+      }
+      // Two-key combos (g <letter>) handled first so they don't conflict with single keys.
+      if (gMode) {
+        const map = { o: 'overview', s: 'simulator', a: 'ai', l: 'library', v: 'validation', d: 'docs', r: 'reports', h: 'landing', p: 'settings' };
+        const dest = map[e.key];
+        if (dest) { e.preventDefault(); navigate(dest); }
+        gMode = false;
+        clearTimeout(gTimer);
+        return;
+      }
+      if (e.key === 'g') {
+        gMode = true;
+        clearTimeout(gTimer);
+        gTimer = setTimeout(() => { gMode = false; }, 900);
+        return;
+      }
+
+      if (e.key === ']') { setSidebarCollapsed(c => !c); return; }
+      if (e.key === 't') { setTheme(t => t === 'dark' ? 'light' : 'dark'); return; }
+      if (e.key === 'r') { runSimulation(); return; }
+      if (e.key === 'S') { // shift+s to avoid conflicts with future single-letter shortcuts
+        const url = `https://hydrohea.ai/run/${runs[0]?.id || '78f3a'}`;
+        if (navigator.clipboard) navigator.clipboard.writeText(url).catch(()=>{});
+        toast('Share link copied', 'success');
+        return;
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('keydown', onKey); clearTimeout(gTimer); };
+  }, [modal, drawer, runs, navigate, runSimulation, toast, closeModal, closeDrawer]);
+
   const value = {
     composition, setComposition,
     opTemp, setOpTemp,
@@ -173,6 +247,10 @@ function HHProvider({ children }) {
     authed, user, signIn, signOut,
     exportItem, shareLink, applyComposition,
     navigate,
+    sidebarCollapsed, setSidebarCollapsed,
+    sidebarOpen, setSidebarOpen,
+    theme, setTheme, toggleTheme,
+    openShortcuts,
   };
 
   return (
@@ -266,6 +344,46 @@ function HHDrawerHost({ drawer, onClose }) {
     </div>
   );
 }
+
+/* ---------------- shortcuts modal ---------------- */
+function HHModalShortcuts() {
+  const groups = [
+    { title: 'Navigate', items: [
+      ['g o', 'Overview'], ['g s', 'Simulator'], ['g a', 'AI Predictor'],
+      ['g l', 'Materials Library'], ['g v', 'Validation Studio'],
+      ['g r', 'Reports'], ['g d', 'Docs'], ['g p', 'Settings'], ['g h', 'Landing'],
+    ]},
+    { title: 'Run & actions', items: [
+      ['r', 'Run simulation'], ['Shift S', 'Copy share link'],
+    ]},
+    { title: 'Interface', items: [
+      [']', 'Toggle sidebar'], ['t', 'Toggle dark / light theme'],
+      ['?', 'This help'], ['Esc', 'Close modal / drawer'],
+    ]},
+  ];
+  return (
+    <div style={{ padding: 28 }}>
+      <div className="hh-eyebrow" style={{ marginBottom: 10 }}><span className="dot" />KEYBOARD SHORTCUTS</div>
+      <h3 className="hh-display" style={{ fontSize: 20, margin: '0 0 16px' }}>Move faster in HydroHEA</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
+        {groups.map(g => (
+          <div key={g.title}>
+            <div style={{ fontSize: 10.5, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', letterSpacing: '0.1em', marginBottom: 8 }}>{g.title.toUpperCase()}</div>
+            {g.items.map(([k, l]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderTop: '1px solid var(--border-soft)' }}>
+                <span style={{ fontSize: 13, color: 'var(--ink-2)' }}>{l}</span>
+                <span style={{ display: 'flex', gap: 4 }}>
+                  {k.split(' ').map((part, i) => <span key={i} className="hh-kbd">{part}</span>)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+window.HHModalShortcuts = HHModalShortcuts;
 
 /* ====================================================
    MODAL CONTENT BUILDERS
@@ -495,19 +613,19 @@ function HHOverview() {
             <button className="hh-btn hh-btn-primary" style={{ padding: '8px 16px', fontSize: 12 }} onClick={() => ctx.navigate('simulator')}>Open simulator →</button>
           </>
         }/>
-        <div className="hh-scroll" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-            <window.HHKpi label="Active project" value="AlFeNi" unit="v3.2" accent="cyan" />
-            <window.HHKpi label="Predicted uptake" value={p.uptake.toFixed(3)} unit="wt%" accent="emerald" delta="+8.4%" />
-            <window.HHKpi label="Runs this week" value={ctx.runs.length + ''} unit="" accent="violet" />
-            <window.HHKpi label="Library size" value={ctx.alloys.length + ''} unit="alloys" accent="gold" />
+        <div className="hh-scroll hh-pad" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
+          <div className="hh-grid-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+            <window.HHKpi primary label="Predicted uptake" value={p.uptake.toFixed(3)} unit="wt%" accent="cyan" delta="+8.4%" />
+            <window.HHKpi label="Active project" value="AlFeNi" unit="v3.2" accent="neutral" />
+            <window.HHKpi label="Runs this week" value={ctx.runs.length + ''} unit="" accent="neutral" />
+            <window.HHKpi label="Library size" value={ctx.alloys.length + ''} unit="alloys" accent="neutral" />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 16, marginBottom: 16 }}>
+          <div className="hh-grid-main" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 16, marginBottom: 16 }}>
             <div className="hh-card hh-card-elev" style={{ padding: 22 }}>
               <div className="hh-eyebrow" style={{ marginBottom: 14 }}><span className="dot" />JUMP IN</div>
               <h3 className="hh-display" style={{ fontSize: 22, margin: '0 0 16px' }}>Resume where you left off</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+              <div className="hh-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
                 {[
                   { t: 'Multi-Physics Simulator', d: 'Continue ' + (last ? last.id : 'run-78f3a'), r: 'simulator', c: 'var(--cyan)' },
                   { t: 'AI Composition Predictor', d: 'Tune ' + window.HHfmtAlloy(ctx.composition), r: 'ai', c: 'var(--gold)' },
@@ -560,7 +678,7 @@ function HHSignIn() {
     ctx.signIn({ name: form.name || form.email.split('@')[0], org: form.org });
   };
   return (
-    <div className="hh-art" style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', height: '100%' }}>
+    <div className="hh-art hh-grid-2" style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', height: '100%' }}>
       <div style={{ position: 'relative', padding: 56, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden', background: 'linear-gradient(135deg, #050811, #0F1526)' }}>
         <div className="hh-grid-bg" style={{ position: 'absolute', inset: 0, opacity: 0.4, maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 75%)' }} />
         <div style={{ position: 'absolute', top: 200, right: -100, width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,229,255,0.15), transparent 70%)', filter: 'blur(40px)' }} />
@@ -632,12 +750,12 @@ function HHReports() {
             <button className="hh-btn hh-btn-primary" style={{ padding: '8px 16px', fontSize: 12 }} onClick={() => ctx.exportItem('New report draft')}>+ Generate report</button>
           </>
         }/>
-        <div className="hh-scroll" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-            <window.HHKpi label="Total reports" value={reports.length + ''} unit="" accent="cyan" />
-            <window.HHKpi label="This month" value="3" unit="" accent="emerald" />
-            <window.HHKpi label="Pages exported" value="114" unit="pp" accent="violet" />
-            <window.HHKpi label="Avg generation" value="12" unit="s" accent="gold" />
+        <div className="hh-scroll hh-pad" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
+          <div className="hh-grid-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+            <window.HHKpi primary label="Total reports" value={reports.length + ''} unit="" accent="violet" />
+            <window.HHKpi label="This month" value="3" unit="" accent="neutral" />
+            <window.HHKpi label="Pages exported" value="114" unit="pp" accent="neutral" />
+            <window.HHKpi label="Avg generation" value="12" unit="s" accent="neutral" />
           </div>
           <div className="hh-card" style={{ padding: 0, overflow: 'hidden' }}>
             <table className="hh-table">
@@ -691,7 +809,7 @@ function HHSettings() {
           </>
         }/>
         <div className="hh-scroll" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="hh-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div className="hh-card hh-card-elev" style={{ padding: 22 }}>
               <div className="hh-eyebrow" style={{ marginBottom: 14 }}><span className="dot" />ACCOUNT</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18, paddingBottom: 18, borderBottom: '1px solid var(--border)' }}>
@@ -792,7 +910,7 @@ function HHDocs() {
           <div className="hh-card hh-card-elev" style={{ padding: 22, marginBottom: 16 }}>
             <input placeholder="🔍  Search docs (e.g. Arrhenius, mesh, XGBoost)…" style={{ width: '100%', padding: '12px 16px', background: 'var(--bg-0)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--ink)', fontSize: 14, fontFamily: 'var(--font-body)', outline: 'none' }} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+          <div className="hh-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
             {groups.map(g => (
               <div key={g.t} className="hh-card" style={{ padding: 22 }}>
                 <div className="hh-eyebrow" style={{ marginBottom: 12 }}><span className="dot" />{g.t.toUpperCase()}</div>

@@ -42,26 +42,26 @@ function HHDashboard() {
       <window.HHSideNav active="simulator" />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-0)' }}>
-        <window.HHTopBar title="Multi-Physics Simulator" subtitle={`${window.HHfmtAlloy(c)} · BCC · 1 mm × 5 mm`} />
+        <window.HHTopBar title="Multi-Physics Simulator" subtitle={`${window.HHfmtAlloy(c)} · BCC · 1 mm × 5 mm`} hideRun />
 
         {/* main grid */}
-        <div className="hh-scroll" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
-          {/* KPI row — values follow current composition/temperature */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 20 }}>
-            <window.HHKpi label="H₂ uptake" value={p.uptake.toFixed(3)} unit="wt%" delta="+8.2%" accent="cyan"
+        <div className="hh-scroll hh-pad" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
+          {/* KPI row — primary KPI is cyan (Simulator's screen color); rest neutral. */}
+          <div className="hh-grid-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 20 }}>
+            <window.HHKpi primary label="H₂ uptake" value={p.uptake.toFixed(3)} unit="wt%" delta="+8.2%" accent="cyan"
               spark="M0 18 C20 16, 40 12, 60 7 S90 4, 100 4" />
-            <window.HHKpi label="τ saturation" value={(1820 - (p.diffusivity - 2.4) * 80).toFixed(0)} unit="s" delta="-12%" accent="violet"
+            <window.HHKpi label="τ saturation" value={(1820 - (p.diffusivity - 2.4) * 80).toFixed(0)} unit="s" accent="neutral"
               spark="M0 22 C20 18, 40 14, 60 10 S90 5, 100 4" />
-            <window.HHKpi label="ΔT surface" value={(boundaryT - 298).toString()} unit="K" delta="+1.4%" accent="gold"
+            <window.HHKpi label="ΔT surface" value={(boundaryT - 298).toString()} unit="K" accent="neutral"
               spark="M0 20 L20 18 L40 12 L60 8 L80 6 L100 5" />
-            <window.HHKpi label="σ_max" value={(4.5 * tNorm).toFixed(2)} unit="×10⁴ Pa" delta="-3.1%" accent="coral"
+            <window.HHKpi label="σ_max" value={(4.5 * tNorm).toFixed(2)} unit="×10⁴ Pa" accent="neutral"
               spark="M0 22 C20 18, 40 10, 60 6 S90 4, 100 8" />
-            <window.HHKpi label="Diffusivity" value={p.diffusivity.toFixed(2)} unit="×10⁻⁷ m²/s" delta="+5.7%" accent="emerald"
+            <window.HHKpi label="Diffusivity" value={p.diffusivity.toFixed(2)} unit="×10⁻⁷ m²/s" accent="neutral"
               spark="M0 16 C20 14, 40 10, 60 6 S90 3, 100 2" />
           </div>
 
           {/* main viz + control */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.85fr', gap: 16, marginBottom: 16 }}>
+          <div className="hh-grid-main" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.85fr', gap: 16, marginBottom: 16 }}>
             {/* heatmap card */}
             <div className="hh-card hh-card-elev" style={{ padding: 20, position: 'relative' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 14 }}>
@@ -79,6 +79,12 @@ function HHDashboard() {
                   {/* probe marker */}
                   <div style={{ position: 'absolute', left: '20%', top: '40%', width: 8, height: 8, borderRadius: '50%', background: '#fff', boxShadow: '0 0 0 2px var(--cyan), 0 0 12px var(--cyan-glow)' }} />
                   <div style={{ position: 'absolute', left: 'calc(20% + 14px)', top: 'calc(40% - 12px)', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)' }}>P1</div>
+                  {ctx.running && (
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(5,8,17,0.55)', backdropFilter: 'blur(2px)', borderRadius: 8 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid rgba(0,229,255,0.25)', borderTopColor: 'var(--cyan)', animation: 'hh-spin 0.9s linear infinite' }} />
+                      <div style={{ marginTop: 12, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', letterSpacing: '0.1em' }}>SOLVING · t = {ctx.tSec}s</div>
+                    </div>
+                  )}
                   {/* axes ticks */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontFamily: 'var(--font-mono)', fontSize: 9.5, color: 'var(--ink-3)' }}>
                     <span>0</span><span>0.25</span><span>0.5</span><span>0.75</span><span>1 mm</span>
@@ -176,18 +182,18 @@ function HHDashboard() {
                 </div>
               </div>
 
-              {/* run button */}
-              <button className="hh-btn hh-btn-gold" style={{ width: '100%', padding: '12px', fontSize: 13, justifyContent: 'center' }} onClick={() => ctx.navigate('ai')}>
-                ✦ Run AI prediction → see optimal alloy
+              {/* Single primary CTA. AI Predictor is reachable from the sidebar. */}
+              <button className="hh-btn hh-btn-primary" disabled={ctx.running} style={{ width: '100%', padding: '12px', fontSize: 13, justifyContent: 'center', opacity: ctx.running ? 0.7 : 1 }} onClick={ctx.runSimulation}>
+                {ctx.running ? <><span className="hh-spin">◐</span>&nbsp;Solver running…</> : '▶ Run multi-physics solve'}
               </button>
-              <button className="hh-btn hh-btn-primary" disabled={ctx.running} style={{ width: '100%', padding: '11px', fontSize: 13, justifyContent: 'center', marginTop: 8, opacity: ctx.running ? 0.7 : 1 }} onClick={ctx.runSimulation}>
-                {ctx.running ? '◐ Solver running…' : '▶ Run multi-physics solve'}
+              <button className="hh-btn hh-btn-ghost" style={{ width: '100%', padding: '9px', fontSize: 12, justifyContent: 'center', marginTop: 8, color: 'var(--gold)', borderColor: 'rgba(255,181,71,0.30)' }} onClick={() => ctx.navigate('ai')}>
+                ✦ Tune with AI Predictor
               </button>
             </div>
           </div>
 
           {/* time curves row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
+          <div className="hh-grid-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
             <div className="hh-card" style={{ padding: 18 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <span style={{ fontSize: 12, fontWeight: 600 }}>Surface H₂ Concentration</span>

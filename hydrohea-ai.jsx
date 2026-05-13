@@ -54,17 +54,17 @@ function HHAIPredictor() {
           </>
         }/>
 
-        <div className="hh-scroll" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
-          {/* hero predictions */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-            <window.HHKpi label="Predicted H₂ uptake" value={pred.uptake} unit="wt%" delta="+8.4%" accent="cyan"
+        <div className="hh-scroll hh-pad" style={{ flex: 1, overflow: 'auto', padding: '24px 32px' }}>
+          {/* hero predictions — AI screen, gold is the primary accent */}
+          <div className="hh-grid-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+            <window.HHKpi primary label="Predicted H₂ uptake" value={pred.uptake} unit="wt%" delta="+8.4%" accent="gold"
               spark="M0 22 C20 18, 40 12, 60 7 S90 4, 100 4" />
-            <window.HHKpi label="Hydride enthalpy" value={pred.enthalpy} unit="kJ/mol" delta="-3.2%" accent="violet" />
-            <window.HHKpi label="Diffusivity D(T)" value={pred.diffusivity} unit="×10⁻⁷ m²/s" delta="+4.1%" accent="emerald" />
-            <window.HHKpi label="Cycling stability" value={pred.stability} unit="" delta="+1.8%" accent="gold" />
+            <window.HHKpi label="Hydride enthalpy" value={pred.enthalpy} unit="kJ/mol" accent="neutral" />
+            <window.HHKpi label="Diffusivity D(T)" value={pred.diffusivity} unit="×10⁻⁷ m²/s" accent="neutral" />
+            <window.HHKpi label="Cycling stability" value={pred.stability} unit="" accent="neutral" />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '0.95fr 1.05fr', gap: 16, marginBottom: 16 }}>
+          <div className="hh-grid-main" style={{ display: 'grid', gridTemplateColumns: '0.95fr 1.05fr', gap: 16, marginBottom: 16 }}>
             {/* composition designer */}
             <div className="hh-card hh-card-elev" style={{ padding: 22 }}>
               <div className="hh-eyebrow" style={{ marginBottom: 14 }}><span className="dot" style={{ background: 'var(--gold)' }} />ALLOY DESIGNER</div>
@@ -171,7 +171,7 @@ function HHAIPredictor() {
           </div>
 
           {/* ternary preview + history */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 16 }}>
+          <div className="hh-grid-main" style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 16 }}>
             <div className="hh-card" style={{ padding: 22 }}>
               <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Al × Fe × Ni response map</div>
               <div style={{ fontSize: 11, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', marginBottom: 14 }}>Predicted H₂ uptake · isocontours</div>
