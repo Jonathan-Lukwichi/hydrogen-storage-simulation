@@ -112,22 +112,29 @@ function HHSideNav({ active = 'simulator' }) {
       width: 240, background: 'var(--bg-1)', borderRight: '1px solid var(--border-soft)',
       display: 'flex', flexDirection: 'column', padding: '20px 0', flexShrink: 0,
     }}>
-      <div style={{ padding: '0 16px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }} onClick={() => navTo('landing')} title="Back to landing">
-          <HHLogo label={!collapsed} />
-        </div>
+      <div style={{ padding: collapsed ? '0 12px 22px' : '0 16px 22px', display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', gap: 8 }}>
+        {!collapsed && (
+          <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }} onClick={() => navTo('landing')} title="Back to landing">
+            <HHLogo label={true} />
+          </div>
+        )}
         <button
           onClick={() => ctx && ctx.setSidebarCollapsed(!collapsed)}
           title={collapsed ? 'Expand sidebar (])' : 'Collapse sidebar (])'}
-          aria-label="Toggle sidebar"
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className="hh-sidenav-toggle"
           style={{
-            width: 24, height: 24, borderRadius: 6,
+            width: 28, height: 28, borderRadius: 8,
             background: 'transparent', border: '1px solid var(--border)',
-            color: 'var(--ink-3)', cursor: 'pointer', fontSize: 11,
-            display: collapsed ? 'none' : 'inline-flex',
+            color: 'var(--ink-2)', cursor: 'pointer', fontSize: 13,
+            display: 'inline-flex',
             alignItems: 'center', justifyContent: 'center',
-          }}>‹</button>
+            transition: 'background .15s, border-color .15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-tint-strong)'; e.currentTarget.style.borderColor = 'var(--ink-3)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
+          {collapsed ? '›' : '‹'}
+        </button>
       </div>
       <div style={{ padding: '0 12px' }}>
         <div className="hh-sidenav-section-label" style={{ padding: '0 12px 10px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.16em', color: 'var(--ink-4)' }}>WORKSPACE</div>
@@ -307,21 +314,38 @@ function HHKpi({ label, value, unit, delta, accent = 'cyan', spark, primary = fa
   );
 }
 
-/* ---------------- STATUS RING ---------------- */
+/* ---------------- STATUS RING ----------------
+   All visual elements scale to `size` so the label & sublabel always fit
+   inside the ring at any size from ~26 px up. Stroke shrinks too for small rings.
+*/
 function HHRing({ value = 0.7, size = 78, label, sublabel, color = 'var(--cyan)' }) {
-  const r = (size - 10) / 2;
+  const stroke = Math.max(2.5, Math.round(size * 0.07));
+  const r = (size - stroke - 2) / 2;
   const c = 2 * Math.PI * r;
+  // Heuristic font sizing. Label takes ~30 % of diameter; sublabel ~13 %.
+  // Clamp the lower bound so very small rings still produce legible glyphs.
+  const labelSize    = Math.max(8, Math.round(size * (sublabel ? 0.30 : 0.34)));
+  const sublabelSize = Math.max(6, Math.round(size * 0.12));
   return (
-    <div style={{ position: 'relative', width: size, height: size }}>
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth="4" />
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth="4"
+    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={stroke} />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
           strokeDasharray={c} strokeDashoffset={c - c * value} strokeLinecap="round"
-          style={{ filter: `drop-shadow(0 0 6px ${color})` }} />
+          style={{ filter: size >= 40 ? `drop-shadow(0 0 6px ${color})` : 'none' }} />
       </svg>
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="hh-num" style={{ fontSize: 18 }}>{label}</div>
-        {sublabel && <div style={{ fontSize: 9, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)' }}>{sublabel}</div>}
+      <div style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        textAlign: 'center', lineHeight: 1.0, padding: 2,
+      }}>
+        <div className="hh-num" style={{ fontSize: labelSize, fontVariantNumeric: 'tabular-nums' }}>{label}</div>
+        {sublabel && (
+          <div style={{ fontSize: sublabelSize, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', marginTop: 1, letterSpacing: '0.04em' }}>
+            {sublabel}
+          </div>
+        )}
       </div>
     </div>
   );
