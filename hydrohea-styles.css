@@ -526,10 +526,46 @@ body {
   .hh-section-pad-sm { padding: 36px 14px !important; }
   .hh-outcomes { grid-template-columns: 1fr !important; }
   .hh-route-pill { top: auto !important; bottom: 12px !important; right: 12px !important; left: 12px !important; max-width: calc(100vw - 24px); }
-  /* Hide hero floating "AI INSIGHT" card on tiny screens — overlaps */
   .hh-hero-floater { display: none !important; }
-  /* Force charts to render at full container width */
   .hh-card svg { max-width: 100%; height: auto; }
+}
+
+/* ---- Ultra-narrow (iPhone X / SE / Android < 400 px) ---- */
+@media (max-width: 400px) {
+  /* Hero — even tighter type, single-col stat strip */
+  .hh-hero-title    { font-size: clamp(26px, 14vw, 36px) !important; line-height: 1.05; }
+  .hh-hero-stats    { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .hh-section-pad   { padding: 36px 12px !important; }
+  .hh-section-pad-sm{ padding: 28px 12px !important; }
+  /* Marketing nav: shrink Sign-in to icon-only, keep Demo CTA */
+  .hh-marketing-nav        { padding: 12px 14px !important; }
+  .hh-marketing-nav-buttons .hh-btn-ghost { padding: 7px 9px !important; font-size: 11px !important; }
+  /* Cockpit screens — even tighter padding */
+  .hh-pad           { padding-left: 10px !important; padding-right: 10px !important; }
+  .hh-topbar        { padding: 10px 12px !important; }
+  /* KPI cards should fill the row, two-up max */
+  .hh-grid-5        { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  /* Sliders bigger thumb for thumb-tapping */
+  .hh-slider::-webkit-slider-thumb { width: 22px; height: 22px; }
+  .hh-slider::-moz-range-thumb     { width: 22px; height: 22px; }
+  /* Toast top moves closer to edge */
+  .hh-toast-host    { top: 60px !important; right: 8px !important; left: 8px !important; }
+  /* Modal full-bleed */
+  .hh-modal-card    { width: 100vw !important; max-height: 95vh !important; border-radius: 12px !important; }
+  /* Drawer full width */
+  .hh-drawer        { width: 100vw !important; }
+  /* Outer art layout doesn't enforce min-width */
+  .hh-art           { min-width: 0 !important; }
+  /* Make hero buttons stack and stretch */
+  .hh-hero-grid .hh-btn { width: 100%; justify-content: center; }
+  /* Tables — turn into 12px font and ensure horizontal scroll */
+  .hh-table         { font-size: 11px !important; }
+  .hh-card > table  { display: block; overflow-x: auto; }
+  /* Bento + pipeline + footer collapse already enforced — restate for safety */
+  .hh-bento, .hh-pipeline, .hh-outcomes { grid-template-columns: 1fr !important; }
+  .hh-footer-links  { gap: 12px !important; }
+  .hh-logos         { gap: 16px !important; }
+  .hh-logos > div   { font-size: 10px !important; }
 }
 
 /* SVG charts should scale to their card width */

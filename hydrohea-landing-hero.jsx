@@ -15,22 +15,19 @@ function HHLandingHero() {
 
       <div className="hh-hero-grid" style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: 64, alignItems: 'center' }}>
         <div>
-          <div className="hh-eyebrow" style={{ marginBottom: 24 }}>
-            <span className="dot" />MULTI-PHYSICS SAAS · BACKED BY METALLURGY SCIENCE
-          </div>
-          <h1 className="hh-display hh-hero-title" style={{ fontSize: 'clamp(40px, 6vw, 76px)', margin: 0, marginBottom: 20 }}>
+          <h1 className="hh-display hh-hero-title" style={{ fontSize: 'clamp(40px, 6vw, 76px)', margin: 0, marginTop: 24, marginBottom: 20 }}>
             Design hydrogen-storage alloys <span style={{ background: 'linear-gradient(90deg, var(--cyan), var(--violet))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>10× faster.</span>
           </h1>
           <p style={{ fontSize: 17, lineHeight: 1.55, color: 'var(--ink-2)', margin: 0, marginBottom: 32, maxWidth: 540 }}>
             HydroHEA fuses AI-driven composition search with high-fidelity multi-physics simulation — replacing months of COMSOL trial-and-error with minutes of guided exploration. Built for metallurgists, materials scientists and mining-sector R&amp;D leaders accelerating the hydrogen economy.
           </p>
 
-          <div style={{ display: 'flex', gap: 12, marginBottom: 48 }}>
-            <button className="hh-btn hh-btn-primary" style={{ padding: '14px 22px', fontSize: 14 }} onClick={() => ctx && ctx.navigate('simulator')}>
+          <div style={{ display: 'flex', gap: 12, marginBottom: 48, flexWrap: 'wrap' }}>
+            <button className="hh-btn hh-btn-primary" style={{ padding: '14px 22px', fontSize: 14 }} onClick={() => ctx && ctx.navigate('setup')}>
               Launch interactive demo <span>→</span>
             </button>
-            <button className="hh-btn hh-btn-ghost" style={{ padding: '14px 22px', fontSize: 14 }} onClick={() => ctx && ctx.openModal({ wide: true, content: <window.HHModalVideo ctx={ctx} /> })}>
-              <span style={{ fontSize: 11 }}>▶</span> Watch 90-sec overview
+            <button className="hh-btn hh-btn-ghost" style={{ padding: '14px 22px', fontSize: 14 }} onClick={() => ctx && ctx.openModal({ content: <window.HHModalDemo ctx={ctx} /> })}>
+              Request a demo
             </button>
           </div>
 
@@ -146,7 +143,7 @@ function HHHeroPreview() {
           <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--gold)', letterSpacing: '0.08em' }}>AI INSIGHT</div>
         </div>
         <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.45 }}>
-          XGBoost suggests increasing <span style={{ color: 'var(--cyan)' }}>Ni → 34%</span> and reducing <span style={{ color: 'var(--cyan)' }}>Al → 22%</span> to gain <span className="hh-num" style={{ color: 'var(--emerald)' }}>+18%</span> hydrogen uptake.
+          The AI suggests increasing <span style={{ color: 'var(--cyan)' }}>Ni → 34%</span> and reducing <span style={{ color: 'var(--cyan)' }}>Al → 22%</span> to gain <span className="hh-num" style={{ color: 'var(--emerald)' }}>+18%</span> hydrogen uptake.
         </div>
       </div>
     </div>

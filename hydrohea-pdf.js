@@ -469,11 +469,143 @@ window.HHPdf = (function () {
     return true;
   }
 
+  // ---------- UI design book — every screen as a real screenshot ----------
+  //
+  // Cycles the app through every route, calls html2canvas on #root after each
+  // paint, and assembles the canvases into a landscape PDF (one page per
+  // screen). Captions describe what each screen does.
+  //
+  // Notes
+  //  · html2canvas is loaded from CDN; we gracefully degrade if missing.
+  //  · We persist & restore the original hash so the user lands back where
+  //    they were when the export finishes.
+  //  · For the landing page (long scrolling marketing) we capture at its
+  //    full scroll height; everything else captures the visible viewport.
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  async function buildDesignBook(ctx) {
+    if (typeof html2canvas === 'undefined') {
+      ctx && ctx.toast && ctx.toast('Could not load html2canvas — try again in a moment', 'error');
+      return false;
+    }
+    const doc = (() => {
+      const PDF = jsPDF(); if (!PDF) return null;
+      return new PDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
+    })();
+    if (!doc) return false;
+
+    const ROUTES = [
+      { id: 'landing',    title: 'Landing page',            caption: 'Marketing entry point. Hero, capability bento, AI model leaderboard, customer outcomes, sign-up CTA.', scroll: true },
+      { id: 'signin',     title: 'Sign in',                 caption: 'Split-screen sign in / sign up with SSO short-cut. Defaults to the workspace owner.' },
+      { id: 'setup',      title: 'Recipe Lab',              caption: 'Step 1: build the alloy recipe with sliders and presets. Live AI prediction reacts to every change.' },
+      { id: 'simulator',  title: 'Multi-Physics Simulator', caption: 'Step 2: full multi-physics solve. 2-D field map, time scrubber, KPIs and time-series curves.' },
+      { id: 'ai',         title: 'AI Composition Predictor', caption: 'Instant AI surrogate + SHAP attribution + live Al × Fe × Ni response map. Pareto suggestions.' },
+      { id: 'library',    title: 'Materials Library',       caption: 'Searchable / sortable catalogue of high-entropy alloys with phase filters and detail drawer.' },
+      { id: 'validation', title: 'Validation Studio',       caption: 'Mesh-sensitivity sweep. Coarse / medium / fine compared against the analytic reference.' },
+      { id: 'reports',    title: 'Engineering Reports',     caption: 'PDF deliverables exported from runs and sweeps. Audit-ready, multi-page.' },
+      { id: 'overview',   title: 'Overview',                caption: 'Workspace home: recent experiments, best recipe, what-to-do-next cards.' },
+      { id: 'settings',   title: 'Workspace settings',      caption: 'Account, notifications, "about this workspace". Back-to-landing & sign-out controls.' },
+    ];
+
+    const originalHash = window.location.hash;
+    ctx && ctx.toast && ctx.toast('Generating UI design book — this takes a moment…', 'info');
+
+    // Cover page
+    let y = header(doc, 'HydroHEA · UI Design Book', `Every screen, captured live at ${new Date().toLocaleString()}`);
+    y = sectionTitle(doc, y, 'Contents', COL.cyan);
+    ROUTES.forEach((r, i) => {
+      y = ensureSpace(doc, y, 7);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...COL.ink);
+      doc.text(`${String(i + 2).padStart(2, '0')}.`, 18, y);
+      doc.text(r.title, 30, y);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...COL.sub);
+      doc.text(`page ${i + 2}`, 280, y, { align: 'right' });
+      y += 7;
+    });
+
+    // Body — one page per route
+    const root = document.getElementById('root');
+    const PDF_W = 297, PDF_H = 210;       // landscape A4 in mm
+    const MARGIN = 12;
+    const HEADER_H = 22;
+    const CAPTION_H = 14;
+    const IMG_MAX_W = PDF_W - MARGIN * 2;
+    const IMG_MAX_H = PDF_H - HEADER_H - CAPTION_H - MARGIN;
+
+    for (const r of ROUTES) {
+      try {
+        window.location.hash = r.id;
+        // give React + babel-standalone time to render + paint
+        await sleep(900);
+        // scroll to top so we capture the hero of the landing
+        window.scrollTo(0, 0);
+        await sleep(150);
+
+        const canvas = await html2canvas(root, {
+          backgroundColor: '#050811',
+          scale: window.devicePixelRatio > 1 ? 1.4 : 1.2,
+          logging: false,
+          useCORS: true,
+          windowWidth: Math.max(window.innerWidth, 1280),
+          windowHeight: Math.max(window.innerHeight, 800),
+          // For the landing page, capture extra height to include below-the-fold sections.
+          height: r.scroll ? Math.min(root.scrollHeight, 3000) : undefined,
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.88);
+
+        // Fit image to page preserving aspect ratio
+        const cw = canvas.width, ch = canvas.height;
+        let drawW = IMG_MAX_W, drawH = (ch / cw) * drawW;
+        if (drawH > IMG_MAX_H) { drawH = IMG_MAX_H; drawW = (cw / ch) * drawH; }
+        const drawX = (PDF_W - drawW) / 2;
+        const drawY = HEADER_H + ((PDF_H - HEADER_H - CAPTION_H - drawH) / 2);
+
+        doc.addPage();
+        // header band
+        doc.setFillColor(...COL.ink);
+        doc.rect(0, 0, PDF_W, HEADER_H, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(255, 255, 255);
+        doc.text(r.title, MARGIN, 13);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(180, 220, 235);
+        doc.text(`route /#${r.id}`, PDF_W - MARGIN, 13, { align: 'right' });
+
+        // screenshot
+        doc.addImage(imgData, 'JPEG', drawX, drawY, drawW, drawH, undefined, 'FAST');
+
+        // caption
+        doc.setFontSize(9.5); doc.setTextColor(...COL.sub);
+        doc.setFont('helvetica', 'normal');
+        const captionLines = doc.splitTextToSize(r.caption, PDF_W - MARGIN * 2);
+        captionLines.slice(0, 2).forEach((ln, i) => doc.text(ln, MARGIN, PDF_H - 6 - (1 - i) * 4));
+      } catch (e) {
+        console.warn('[HHPdf.buildDesignBook] capture failed for', r.id, e);
+      }
+    }
+
+    // restore original route
+    window.location.hash = originalHash || '';
+
+    // page numbers
+    const pages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8); doc.setTextColor(...COL.sub);
+      doc.text(`HydroHEA · UI design book · page ${i} of ${pages}`, PDF_W - MARGIN, PDF_H - 2, { align: 'right' });
+    }
+
+    save(doc, `hydrohea-ui-design-book-${new Date().toISOString().slice(0,10)}.pdf`);
+    ctx && ctx.toast && ctx.toast(`Design book exported · ${pages} pages`, 'success');
+    return true;
+  }
+
   return {
     available: () => !!jsPDF(),
     buildRunReport,
     buildAlloyDatasheet,
     buildValidationAudit,
     buildGenericReport,
+    buildDesignBook,
   };
 })();
