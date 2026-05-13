@@ -158,12 +158,78 @@ window.HHPhysics = (function () {
     return baseWt * (0.35 + 0.65 * tWindow);
   }
 
+  // -------- mesh-sensitivity / convergence --------
+  // First-order linear FEM in 2D has element size h ∝ 1/√N and discretisation
+  // error ε(h) ∝ h^p. For p ≈ 1 (mixed first-order error) ε ∝ 1/√N.
+  // We expose:
+  //   meshError(N, Nref, slope) — error % vs fine reference
+  //   meshSweep(...)            — three meshes with field values + errors
+  //   meshConvergence(Nref, slope) — series for the convergence chart
+  function meshError(N, Nref, slope = 1.0) {
+    if (N >= Nref || N <= 0) return 0;
+    return slope * (Math.sqrt(Nref / N) - 1);
+  }
+
+  // Per-variable convergence slopes — tuned so error magnitudes land in a
+  // realistic 1–8 % range for coarse vs fine on a 14 280-element reference.
+  const MESH_SLOPES = {
+    concentration: 1.20,
+    temperature:   1.70,
+    stress:        2.50,
+    depth:         1.50,
+  };
+
+  function meshSweep({ slabW = 1e-3, slabH = 5e-3, T = 500, c_s = 8000, t = 3600 } = {}) {
+    const meshes = [
+      { name: 'Coarse',           N: 2140  },
+      { name: 'Medium',           N: 6720  },
+      { name: 'Fine (Reference)', N: 14280 },
+    ];
+    const Nref = 14280;
+    const D = diffusivity(T);
+    const xProbe = slabW * 0.2;
+    // "Exact" reference values from the analytic solutions.
+    const cFine     = concentration(xProbe, t, c_s, D);
+    const Tfine     = T;
+    const sigmaFine = vonMisesStress(cFine);
+    const depthFine = penetrationDepth(t, D);
+
+    return meshes.map(m => {
+      const errC = meshError(m.N, Nref, MESH_SLOPES.concentration);
+      const errT = meshError(m.N, Nref, MESH_SLOPES.temperature);
+      const errS = meshError(m.N, Nref, MESH_SLOPES.stress);
+      const errD = meshError(m.N, Nref, MESH_SLOPES.depth);
+      // Apply the discretisation error as a (signed) perturbation to the
+      // analytic reference values — coarser meshes under-predict.
+      return {
+        name: m.name,
+        N: m.N,
+        isRef: m.N === Nref,
+        worstError: Math.max(errC, errT, errS, errD),
+        errors:   { concentration: errC, temperature: errT, stress: errS, depth: errD },
+        values: {
+          concentration: cFine     * (1 - errC / 100),
+          temperature:   Tfine     - errT * 0.05 * Tfine,
+          stress:        sigmaFine * (1 - errS / 100),
+          depth:         depthFine * (1 - errD / 100),
+          ref: { c: cFine, T: Tfine, sigma: sigmaFine, depth: depthFine },
+        },
+      };
+    });
+  }
+
+  function meshConvergence(Nref = 14280, slope = 1.0, Ns = [1000, 2000, 3500, 6000, 9000, 14000, 20000]) {
+    return Ns.map(N => [N / 1000, meshError(N, Nref, slope)]);
+  }
+
   return {
     R, M_H, M_H2, RHO, E_MOD, NU, D0, Q, ALPHA, BETA, ELEMENTS,
+    MESH_SLOPES,
     erf, erfc,
     diffusivity, concentration, penetrationDepth, saturationTime,
     temperature, vonMisesStress,
     hydrideEnthalpy, deltaRadius, cyclingStability,
     sievertsConcentration, uptakeWtPct,
+    meshError, meshSweep, meshConvergence,
   };
 })();
