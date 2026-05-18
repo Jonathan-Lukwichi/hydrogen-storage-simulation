@@ -34,7 +34,7 @@ deploys it as a free static site.
 
 1. **New +** → **Static Site** → connect the repo.
 2. Settings:
-   - **Branch:** `claude/implement-hydrohea-dDQ2F` (or `main` after merge)
+   - **Branch:** `implement-hydrohea-prototype` (or `main` after merge)
    - **Build Command:** *(leave empty)*
    - **Publish Directory:** `.`
 3. Click **Create Static Site**.
