@@ -1,0 +1,16 @@
+service,sa_market_low_zar,sa_market_typical_zar,sa_market_high_zar,unit,source_id,evidence_grade,commentary
+Social media management (freelancer),2500,4500,8000,per month,S01,B,"Sets the floor. Any offer priced here is read as a freelancer offer."
+Social media management (boutique agency 2-5 people),8000,12000,20000,per month,S01,B,"The band a specialist solo/boutique operator can credibly occupy."
+Social media management (mid-market agency),20000,30000,50000,per month,S01,B,"Requires a real team: strategist copywriter designer paid-media manager analyst."
+Digital marketing retainer (SA general),8000,15000,25000,per month,S02,B,"Excludes ad spend."
+Website - simple 5 page,5590,10000,15000,per project,S04,B,
+Website - standard business site,15000,30000,60000,per project,S04,B,"The band most SA businesses actually pay."
+Website - complex corporate platform,60000,120000,250000,per project,S04,B,
+Corporate video - under 5 minutes,5000,15000,25000,per video,S05,B,"Single camera basic edit."
+Corporate video - 5 to 15 minutes,25000,45000,75000,per video,S05,B,"Multiple shoot days professional edit music licensing."
+Corporate video - high production 15+ minutes,75000,120000,250000,per video,S05,B,
+Video - rule of thumb,10000,10000,10000,per produced minute,S05,C,"Widely quoted heuristic; unreliable at the extremes."
+3D still render - simple exterior,2500,6000,10000,per image,S06,B,"Architectural viz pricing. Mechanical/industrial subjects likely higher."
+3D still render - complex photoreal,25000,35000,60000,per image,S06,B,
+3D animation,8000,60000,250000,per project,S06,B,"Very wide band; depends on length and asset build."
+Ad spend (separate from fees),2000,6000,10000,per month,S01,B,"Must always be quoted separately from service fees."

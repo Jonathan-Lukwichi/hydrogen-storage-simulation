@@ -1,0 +1,4 @@
+# Only needed for `python3 src/pipeline.py audit` (website signal collection).
+# template / score / briefs run on the standard library alone.
+requests>=2.31
+beautifulsoup4>=4.12

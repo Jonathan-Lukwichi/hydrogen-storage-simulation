@@ -1,0 +1,11 @@
+step,offer,shape,price_low_zar,price_target_zar,price_high_zar,est_hours,time_cost_at_450,tools_zar,total_cost_zar,gross_margin_pct,include_from
+0,Digital Capability Review,Free deliverable,0,0,0,2,900,0,900,-100,Day 1
+1,Project Digital Showcase,One-off 3 weeks,18000,25000,35000,26,11700,700,12400,50,Day 1
+2,Capability Pack,One-off 6-8 weeks,45000,60000,85000,70,31500,1800,33300,45,After first wedge delivered
+3,Retainer - Foundation,Monthly 6-month min,15000,15000,15000,15,6750,500,7250,52,Day 1
+4,Retainer - Growth,Monthly 6-month min,25000,25000,25000,23.5,10575,800,11375,55,Day 1
+5,Retainer - Authority,Monthly 12-month,40000,45000,60000,36,16200,1500,17700,56,Month 3+
+A1,Technical explainer video,One-off add-on,30000,45000,60000,48,21600,2500,24100,46,Month 4+
+A2,Static technical 3D visualisation,One-off add-on,6000,9000,12000,0,0,0,0,0,Month 6+ - outsource first
+A3,Interactive 3D project experience,One-off add-on,90000,135000,180000,110,49500,2000,51500,57,Month 12+ signed order only
+X1,REJECTED - proposed R4500 starter,Monthly,4500,4500,4500,11,4950,300,5250,-17,NEVER - loss making

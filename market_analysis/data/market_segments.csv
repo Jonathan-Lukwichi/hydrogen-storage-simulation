@@ -1,0 +1,9 @@
+rank,segment,priority,ability_to_pay,sector_momentum,primary_trigger,evidence,verdict
+1,CIDB Grade 7-9 civil/structural/building contractors,FIRST,High,"Growing: +2.8% real 2026, R1.06trn MTEF",Contract award or tender in preparation,"S07 S08 S11 S12",Target now
+2,Mining services / mining equipment / EPCM,FIRST,High,"Expanding; DRC copper +6% 2026",Contract award or new site,"S22 S27",Target now
+3,Renewable energy EPC and IPP-facing engineering,FIRST,High,"IRP implies sustained deployment",Bid round or award,"S25",Target now
+4,Consulting engineering firms (CESA scale),SECOND,Medium-High,Stable,Project completion or new discipline,"S10",Second wave
+5,Industrial automation and systems integrators,SECOND,Medium,Stable,Product launch or new client win,"Search evidence",Second wave
+6,Metals and engineering manufacturers (SEIFSA universe),DEFER,Low-Medium now,"Contracting: -0.8% Q1 2026, production -2.9% Apr 2026",Product launch,"S09 S21",Defer
+7,CIDB Grade 1-4 micro contractors,EXCLUDE,Very low,n/a,n/a,"S11",Exclude
+8,DRC-domiciled SMEs,EXCLUDE,Low + high friction,"Mining strong but access poor",n/a,"S14 S23",Exclude - serve SA firms working in DRC instead

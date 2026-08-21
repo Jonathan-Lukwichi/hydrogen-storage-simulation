@@ -1,0 +1,3 @@
+company_id,company_name,score,band,band_label,band_action,completeness,actionable,capacity,motive,gap,bonus_3d,modifiers,missing_required_signals
+DEMO-001,DEMO Fictional Structural Contractor,86.0,A,Very high priority,Build a custom sample before contact. Personal approach.,1.0,True,26.0,27.0,31.0,2.0,none,none
+DEMO-002,DEMO Fictional Indifferent Works,25.8,E,Deprioritise,Do not spend time here.,1.0,True,13.0,0.0,30.0,0.0,intent_gate x0.6 (no trigger and no marketing intent),none

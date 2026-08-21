@@ -1,0 +1,13 @@
+stage,activity,channel,target_volume_8_weeks,hours_per_unit,success_measure,popia_status
+Source,Trigger monitoring,"Engineering News, tender portals, LinkedIn company updates",200 screened,0.1,50 with a live trigger,N/A
+Qualify,Website audit + EDOS scoring,src/pipeline.py,50 audited,0.5,25 scoring Tier A or B,N/A
+Prepare,Custom artefact from prospect's own project,Manual founder work,25 built,2.5,n/a,N/A
+Contact,Decision-maker outreach,LinkedIn connection + message,50 contacted,0.3,>=20% meaningful reply,Permitted
+Contact,Decision-maker outreach,Telephone,as needed,0.3,,Permitted - respect opt-out registers
+Contact,Warm introduction,Referral,as many as possible,0.2,Highest conversion channel,Permitted
+Contact,Role-based email (info@ tenders@),Email,limited,0.1,,Probably permitted - take legal advice
+Contact,Cold email to named individual,Email,0,0,,NOT PERMITTED - POPIA s69 requires opt-in
+Contact,Purchased or scraped list,Email,0,0,,NOT PERMITTED
+Meet,Discovery + artefact walkthrough,Video or on-site,6-10 meetings,1.5,>=6 meetings,N/A
+Close,Wedge offer R18k-R35k,Written proposal,3 pilots,2,>=3 pilots at >=R18000,N/A
+Expand,Retainer conversion at delivery review,In person,2 retainers,1,>=2 at >=R15000,N/A
